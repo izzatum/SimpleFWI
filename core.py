@@ -26,7 +26,6 @@ def getA(f, m, h, n):
         N - total number of model parameters
 
     """
-    
     N = np.prod(n)
     omega = 1.e-3 * 2. * np.pi * f
     m = m.ravel()
@@ -40,8 +39,10 @@ def getA(f, m, h, n):
     D2 = sparse.spdiags(d2, diags_pos, n[1] - 1, n[1], format='csc')
 
     # Laplacian
-    L = - sparse.kron(D2.T @ D2, sparse.eye(n[0]), format='csc') - \
-        sparse.kron(sparse.eye(n[1]), D1.T @ D1, format='csc')
+    # L = - sparse.kron(D2.T @ D2, sparse.eye(n[0]), format='csc') - \
+    #    sparse.kron(sparse.eye(n[1]), D1.T @ D1, format='csc')
+    L = - sparse.kron(D1.T @ D1, sparse.eye(n[1]), format='csc') - \
+        sparse.kron(sparse.eye(n[0]), D2.T @ D2, format='csc')
 
     a = np.ones(n)
     a[:, [0, -1]] = 0.5
@@ -75,7 +76,6 @@ def getP(h, xs, zs, x, z, dtype='float'):
     : :obj:`pylops.LinearOperator`
         sampling matrix
     """
-
     ixs = np.array(xs) / h[1]
     izs = np.array(zs) / h[0]
     nx, nz = len(x), len(z)
@@ -108,18 +108,17 @@ def getG(f, m, u, h, n):
         2-D array of G(m, u) = d(A(m)*u)/dm with dimension N x Ns
     """
 
-    if u.ndim < 2:
-        u = u.reshape(-1, 1)
-
     omega = 1.e-3 * 2.0 * np.pi * f
-    m = m.reshape(-1, 1)
 
     a = np.ones(n)
     a[:, [0, -1]] = 0.5
     a[[0, -1], :] = 0.5
-    a = a.reshape(-1, 1)
+    a = a.ravel()
+    m = m.ravel()
+    u = u.ravel()
 
-    return omega ** 2 * (a * u) + (2.0j * omega / h[0]) * (0.5 * (1.0 - a) * u / np.sqrt(m))
+    return omega ** 2 * sparse.diags(a * u) + \
+           (2.0j * omega / h[0]) * sparse.diags(0.5 * (1.0 - a) * u / np.sqrt(m))
 
 
 class JacobianForwardSolver(LinearOperator):
@@ -174,12 +173,18 @@ class JacobianForwardSolver(LinearOperator):
                        model['z'], dtype)
         self.Gk = lambda fr, u: getG(fr, m, u, self.h, self.n)
         self.Ak = lambda fr: getA(fr, m, self.h, self.n)
+        self.Aks = [sparse.linalg.factorized(self.Ak(freq)) for freq in self.f]
+        self.AHks = [sparse.linalg.factorized(self.Ak(freq).H) for freq in self.f]
 
     def _matvec(self, v):
+
         y = []
         for i, freq in enumerate(self.f):
-            Rk = -self.Gk(freq, self.U[..., i]) * v.reshape(-1, 1)
-            ARk = sparse.linalg.spsolve(self.Ak(freq), Rk)
+            Rk = np.zeros((self.N, self.ns), dtype='complex')
+            for s in range(self.ns):
+                Rk[:, s] = (-self.Gk(freq, self.U[..., s, i]) * v.reshape(-1, 1)).squeeze()
+            ARk = self.Aks[i](Rk)
+            # ARk = sparse.linalg.spsolve(self.Ak(freq), Rk)
             y.append(self.Pr @ ARk)
         return np.vstack(y).reshape(-1, 1)
 
@@ -188,11 +193,14 @@ class JacobianForwardSolver(LinearOperator):
         v = v.reshape((self.nr, self.ns, self.nf))
         for i, freq in enumerate(self.f):
             Pv = self.Pr.T * v[..., i]
-            Rk = sparse.linalg.spsolve(self.Ak(freq).H, Pv)
-            GRk = self.Gk(freq, self.U[..., i]).conj() * Rk
+            Rk = self.AHks[i](Pv)
+            # Rk = sparse.linalg.spsolve(self.Ak(freq).H, Pv)
+            # imaging condition
+            # GRk = self.Gk(freq, self.U[..., i]).conj() * Rk
             for s in range(self.ns):
-                y -= GRk[..., s].reshape(-1, 1)
-        return y
+                y -= self.Gk(freq, self.U[..., s, i]).H * Rk[..., s]
+                # y -= GRk[..., s].reshape(-1, 1)
+        return y.reshape(-1, 1)
 
 
 class ForwardSolver:
@@ -227,13 +235,15 @@ class ForwardSolver:
         self.Pr = getP(model['h'], model['xr'], model['zr'], model['x'], model['z'], dtype='complex')
         self.Q = self.Ps.T @ model['q']
 
-    def solve(self, m):
+    def solve(self, m, rsample=True):
         """Solves the Helmholtz equation and maps the solution to data
 
         Parameters
         ----------
         m : :obj:`numpy.ndarray`
             Vector of model parameters (slowness-squared model)
+        rsample : :obj:`bool`
+            Sample at receivers or return full field
 
         Returns
         -------
@@ -247,9 +257,16 @@ class ForwardSolver:
 
         for i, f in enumerate(self.f):
             Ai = getA(f, m, self.h, self.n)
-            U[:, :, i] = sparse.linalg.spsolve(Ai, self.Q).reshape(self.nxz, self.ns)
+            Aifact = sparse.linalg.factorized(Ai)
+            U[:, :, i] = (Aifact(self.Q)).reshape(self.nxz, self.ns)
+            # U[:, :, i] = sparse.linalg.spsolve(Ai, self.Q).reshape(self.nxz, self.ns)
+            # iterative solver, but can only do one source at the time!
+            # U[:, :, i] = sparse.linalg.gmres(Ai, self.Q)[0].reshape(self.nxz, self.ns)
             D[:, :, i] = (self.Pr @ U[..., i]).reshape(self.nr, self.ns)
 
         DF = JacobianForwardSolver(m, U, self.model)
 
-        return D.reshape(-1, 1), DF
+        if rsample:
+            return D.reshape(-1, 1), DF
+        else:
+            return U, DF
