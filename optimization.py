@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def BBiter(misfitfunc, m0, tol=1.e-6, maxit=5):
+def BBiter(misfitfunc, m0, tol=1.e-6, maxit=5, bounds=None):
     mk = m0.copy()
     fk, gk, _ = misfitfunc.evaluate(mk)
     tk = np.linalg.norm(gk)
@@ -13,6 +13,11 @@ def BBiter(misfitfunc, m0, tol=1.e-6, maxit=5):
         # update
         sk = -gk / tk
         mk += sk
+
+        # apply bounds
+        if bounds is not None:
+            mk = np.maximum(mk, bounds[0])
+            mk = np.minimum(mk, bounds[1])
 
         # gradient update
         fk, gk, _ = misfitfunc.evaluate(mk)
@@ -31,7 +36,7 @@ def BBiter(misfitfunc, m0, tol=1.e-6, maxit=5):
     return np.vstack(history), mk, gk
 
 
-def CGiter(misfitfunc, m0, Dobs, forwardSolver, tol=1.e-6, maxit=5):
+def CGiter(misfitfunc, m0, Dobs, forwardSolver, tol=1.e-6, maxit=5, bounds=None):
     mk = m0.copy()
     fk0, gk0, _ = misfitfunc.evaluate(mk)
     dk = -gk0
@@ -45,6 +50,11 @@ def CGiter(misfitfunc, m0, Dobs, forwardSolver, tol=1.e-6, maxit=5):
 
         # update
         mk += alpha * dk
+
+        # apply bounds
+        if bounds is not None:
+            mk = np.maximum(mk, bounds[0])
+            mk = np.minimum(mk, bounds[1])
 
         # gradient update
         fk, gk, _ = misfitfunc.evaluate(mk)
