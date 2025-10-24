@@ -1,0 +1,21 @@
+# Include data files
+include LICENSE
+include README.md
+include pyproject.toml
+include .gitignore
+
+# Include notebooks
+recursive-include . *.ipynb
+
+# Include data
+recursive-include data *.mat
+
+# Include tests
+recursive-include tests *.py
+
+# Exclude unwanted files
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude __pycache__
+global-exclude .DS_Store
+global-exclude *.so

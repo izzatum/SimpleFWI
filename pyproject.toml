@@ -1,0 +1,293 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "simplefwi"
+version = "0.1.0"
+description = "Performance-grade frequency-domain Full Waveform Inversion (FWI) package"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Muhammad Izzatullah", email = "izzatum@users.noreply.github.com"}
+]
+keywords = [
+    "full-waveform-inversion",
+    "seismic",
+    "geophysics",
+    "inverse-problems",
+    "optimization",
+    "helmholtz-equation",
+    "frequency-domain"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+
+dependencies = [
+    # Core numerical computing
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    
+    # Plotting and visualization
+    "matplotlib>=3.7.0",
+    "seaborn>=0.12.0",  # Statistical data visualization
+    
+    # Linear operators and signal processing
+    "pylops>=2.3.0",
+    
+    # Image processing (used in examples for test geometries)
+    "scikit-image>=0.21.0",
+    
+    # Data handling
+    "h5py>=3.9.0",  # HDF5 file format support
+    "pandas>=2.0.0",  # Data analysis (optional but useful)
+    
+    # Progress bars for long computations
+    "tqdm>=4.65.0",
+]
+
+[project.optional-dependencies]
+# GPU acceleration (choose based on hardware)
+gpu-cuda = [
+    "cupy-cuda11x>=12.0.0",  # For NVIDIA CUDA 11.x
+    "cupy-cuda12x>=12.0.0",  # For NVIDIA CUDA 12.x
+]
+gpu-metal = [
+    "jax[metal]>=0.4.20",  # For Apple Silicon (M1/M2/M3)
+]
+gpu-apple = [
+    "mlx>=0.0.9",  # Apple's ML framework for Apple Silicon
+]
+
+# All GPU backends
+gpu-all = [
+    "jax>=0.4.20",  # JAX without Metal (works on CPU/CUDA)
+]
+
+# JIT compilation and performance optimization
+performance = [
+    "numba>=0.58.0",  # JIT compiler for Python
+    "cython>=3.0.0",  # C-extensions for Python
+    "line_profiler>=4.0.0",  # Line-by-line profiling
+    "memory_profiler>=0.61.0",  # Memory usage profiling
+]
+
+# Parallel computing
+parallel = [
+    "joblib>=1.3.0",  # Parallel processing
+    "dask[array]>=2023.5.0",  # Parallel arrays (for large-scale)
+    "mpi4py>=3.1.4",  # MPI for distributed computing (optional)
+]
+
+# Advanced optimization algorithms (Phase 8)
+optimization = [
+    "scikit-learn>=1.3.0",  # For optimization utilities
+    "scipy>=1.10.0",  # Already in core, but emphasized for L-BFGS-B
+]
+
+# Sparse linear algebra enhancements
+sparse = [
+    "sparse>=0.14.0",  # Sparse array library
+    "pyamg>=5.0.0",  # Algebraic multigrid solvers (preconditioners)
+]
+
+# Development dependencies
+dev = [
+    # Testing
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-xdist>=3.3.0",  # Parallel testing
+    "pytest-benchmark>=4.0.0",  # Performance benchmarking
+    "pytest-timeout>=2.1.0",  # Test timeouts
+    "hypothesis>=6.82.0",  # Property-based testing
+    
+    # Code quality
+    "black>=23.7.0",
+    "flake8>=6.1.0",
+    "flake8-docstrings>=1.7.0",  # Check docstrings
+    "flake8-bugbear>=23.7.0",  # Find likely bugs
+    "mypy>=1.5.0",
+    "isort>=5.12.0",
+    "pylint>=2.17.0",  # Additional linting
+    "pre-commit>=3.3.0",
+    
+    # Development tools
+    "ipython>=8.14.0",  # Enhanced Python shell
+    "ipdb>=0.13.13",  # IPython debugger
+]
+
+# Jupyter notebook support
+notebooks = [
+    "jupyter>=1.0.0",
+    "jupyterlab>=4.0.0",
+    "notebook>=7.0.0",
+    "ipywidgets>=8.0.0",  # Interactive widgets
+    "ipympl>=0.9.3",  # Matplotlib integration
+]
+
+# Documentation
+docs = [
+    "sphinx>=7.1.0",
+    "sphinx-rtd-theme>=1.3.0",
+    "sphinx-autodoc-typehints>=1.24.0",
+    "sphinx-gallery>=0.14.0",  # Example gallery
+    "nbsphinx>=0.9.3",  # For notebook examples
+    "myst-parser>=2.0.0",  # Markdown support in Sphinx
+    "pandoc>=2.3",
+]
+
+# Visualization enhancements
+viz = [
+    "plotly>=5.15.0",  # Interactive plots
+    "mayavi>=4.8.0",  # 3D visualization (optional, heavy dependency)
+    "pyvista>=0.42.0",  # 3D visualization (lighter alternative)
+]
+
+# Complete installation (CPU only, minimal)
+complete = [
+    "simplefwi[performance,parallel,notebooks,dev,docs]",
+]
+
+# Complete installation with GPU support (Apple Silicon)
+complete-metal = [
+    "simplefwi[gpu-metal,performance,parallel,notebooks,dev,docs]",
+]
+
+# Complete installation with GPU support (NVIDIA)
+complete-cuda = [
+    "simplefwi[gpu-cuda,performance,parallel,notebooks,dev,docs]",
+]
+
+# Complete installation with all optional features
+complete-full = [
+    "simplefwi[gpu-all,performance,parallel,optimization,sparse,notebooks,dev,docs,viz]",
+]
+
+# Lightweight installation (for production use)
+minimal = [
+    "simplefwi",  # Only core dependencies
+]
+
+[project.urls]
+Homepage = "https://github.com/izzatum/SimpleFWI"
+Documentation = "https://github.com/izzatum/SimpleFWI/blob/main/README.md"
+Repository = "https://github.com/izzatum/SimpleFWI"
+Issues = "https://github.com/izzatum/SimpleFWI/issues"
+
+[tool.setuptools]
+packages = ["simplefwi"]
+
+[tool.setuptools.package-data]
+simplefwi = ["py.typed"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--showlocals",
+]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "gpu: marks tests that require GPU",
+    "metal: marks tests for Apple Silicon Metal backend",
+    "cuda: marks tests for NVIDIA CUDA backend",
+]
+
+[tool.coverage.run]
+source = ["simplefwi"]
+omit = [
+    "tests/*",
+    "setup.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "if typing.TYPE_CHECKING:",
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py39', 'py310', 'py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "scipy.*",
+    "matplotlib.*",
+    "pylops.*",
+    "skimage.*",
+    "cupy.*",
+    "jax.*",
+    "mlx.*",
+    "seaborn.*",
+    "h5py.*",
+    "pandas.*",
+    "tqdm.*",
+    "joblib.*",
+    "dask.*",
+    "mpi4py.*",
+    "sparse.*",
+    "pyamg.*",
+    "plotly.*",
+    "mayavi.*",
+    "pyvista.*",
+    "numba.*",
+    "IPython.*",
+]
+ignore_missing_imports = true

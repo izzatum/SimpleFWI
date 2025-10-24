@@ -1,21 +1,21 @@
 import numpy as np
 import pylops
-import core
+from simplefwi import core
 
 
 class MisfitFunction:
     r"""General misfit function
 
-        Maps model parameters m to misfit values:
-        R^{N} -> R
-        N - total number of model parameters
+    Maps model parameters m to misfit values:
+    R^{N} -> R
+    N - total number of model parameters
 
-        Parameters
-        ----------
-        dataMisfit : :class:
-            DataMisfit class
-        regMisfit : :class:
-            RegMisfit class
+    Parameters
+    ----------
+    dataMisfit : :class:
+        DataMisfit class
+    regMisfit : :class:
+        RegMisfit class
     """
 
     def __init__(self, dataMisfit, regMisfit):
@@ -54,19 +54,19 @@ class MisfitFunction:
 class DataMisfit:
     r"""Least-squares data misfit function
 
-        Maps model parameters m to misfit values:
-        R^{N} -> R
-        N - total number of model parameters
+    Maps model parameters m to misfit values:
+    R^{N} -> R
+    N - total number of model parameters
 
-        Parameters
-        ----------
-        Dobs : :obj:`numpy.ndarray`
-            1-D flattened array of observed data (Nr x Ns x Nf)
-            Nr - total number of receivers
-            Ns - total number of sources
-            Nf - total number of frequencies
-        model : :obj:`dict`
-            Dictionary of parameters for modelling
+    Parameters
+    ----------
+    Dobs : :obj:`numpy.ndarray`
+        1-D flattened array of observed data (Nr x Ns x Nf)
+        Nr - total number of receivers
+        Ns - total number of sources
+        Nf - total number of frequencies
+    model : :obj:`dict`
+        Dictionary of parameters for modelling
     """
 
     def __init__(self, Dobs, model):
@@ -96,7 +96,7 @@ class DataMisfit:
         """
         Dk, Jk = self.Fm.solve(m)
 
-        f = 0.5 * np.linalg.norm(Dk - self.Dobs, 'fro') ** 2
+        f = 0.5 * np.linalg.norm(Dk - self.Dobs, "fro") ** 2
         g = Jk.H * (Dk - self.Dobs)
         H = Jk.H * Jk
 
@@ -106,18 +106,18 @@ class DataMisfit:
 class RegMisfit:
     r"""Regularization misfit function
 
-        Maps model parameters m to misfit values:
-        R^{N} -> R
-        N - total number of model parameters
+    Maps model parameters m to misfit values:
+    R^{N} -> R
+    N - total number of model parameters
 
-        Parameters
-        ----------
-        n : :obj:`numpy.ndarray`
-            Dimensions of m (nz,nx)
-        alpha : :obj:`int`
-            Regularization weights
-        m0 : :obj:`numpy.ndarray`
-            Vector of model parameters prior (size of m)
+    Parameters
+    ----------
+    n : :obj:`numpy.ndarray`
+        Dimensions of m (nz,nx)
+    alpha : :obj:`int`
+        Regularization weights
+    m0 : :obj:`numpy.ndarray`
+        Vector of model parameters prior (size of m)
     """
 
     def __init__(self, n, alpha=0.5, m0=0.0):
@@ -147,9 +147,9 @@ class RegMisfit:
             Data misfit Hessian operator
         """
 
-        LL = self.L.T*self.L
+        LL = self.L.T * self.L
 
-        f = self.alpha*np.linalg.norm(self.L*(m - self.m0), 'fro')**2
+        f = self.alpha * np.linalg.norm(self.L * (m - self.m0), "fro") ** 2
         g = self.alpha * LL * (m - self.m0)
         H = self.alpha * LL
 
