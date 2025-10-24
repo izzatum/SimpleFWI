@@ -68,11 +68,12 @@ __email__ = "izzatum@users.noreply.github.com"
 
 # Import core functionality
 from simplefwi.core import (
-    getA,
-    getP,
-    getG,
-    ForwardSolver,
-    JacobianForwardSolver,
+    build_helmholtz_matrix,
+    build_interpolation_operator,
+    build_sensitivity_kernel,
+    ForwardModeler,
+    ForwardSolver,  # Backward compatibility alias
+    JacobianOperator,
 )
 
 from simplefwi.misfit import (
@@ -94,11 +95,12 @@ __all__ = [
     "__author__",
     "__email__",
     # Core forward modeling
-    "getA",
-    "getP",
-    "getG",
-    "ForwardSolver",
-    "JacobianForwardSolver",
+    "build_helmholtz_matrix",
+    "build_interpolation_operator",
+    "build_sensitivity_kernel",
+    "ForwardModeler",
+    "ForwardSolver",  # Backward compatibility
+    "JacobianOperator",
     # Misfit functions
     "DataMisfit",
     "RegMisfit",

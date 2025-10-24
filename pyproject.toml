@@ -64,7 +64,8 @@ gpu-cuda = [
     "cupy-cuda12x>=12.0.0",  # For NVIDIA CUDA 12.x
 ]
 gpu-metal = [
-    "jax[metal]>=0.4.20",  # For Apple Silicon (M1/M2/M3)
+    "jax>=0.4.20",  # JAX core library
+    "jax-metal>=0.1.0",  # Metal plugin for Apple Silicon GPU acceleration
 ]
 gpu-apple = [
     "mlx>=0.0.9",  # Apple's ML framework for Apple Silicon
