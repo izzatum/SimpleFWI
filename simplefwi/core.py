@@ -25,14 +25,7 @@ from pylops.signalprocessing import Bilinear
 
 def build_helmholtz_matrix(freq, model_params, grid_spacing, grid_dims):
     """
-    Build Helmholtz operator: A(ω,m) = ω²M + 2iωC - K
-
-    TODO: Further optimize absorbing boundaries to reduce gradient artifacts
-    Current implementation uses sponge layer (polynomial damping) which works
-    but may still show some boundary effects. Consider:
-    - PML/CPML (requires system dimension change - Phase 9 in roadmap)
-    - Optimized sponge parameters (thickness, alpha_max, power)
-    - Rayleigh/exponential damping profiles
+    Build Helmholtz operator: A(ω,m) = ω²M + 2iωC + L
 
     Parameters
     ----------
@@ -69,47 +62,24 @@ def build_helmholtz_matrix(freq, model_params, grid_spacing, grid_dims):
     d2_vals = np.repeat([[-1.0], [1.0]], nx, axis=1) / dx
     D2 = sparse.spdiags(d2_vals, [0, 1], nx - 1, nx, format="csc")
 
-    # Build 2D Laplacian: -∇² = -(∂²/∂z² + ∂²/∂x²)
+    # Build 2D Laplacian: L = -∇² = -(∂²/∂z² + ∂²/∂x²)
     # Using Kronecker product for 2D operators
-    Laplacian = -sparse.kron(D1.T @ D1, sparse.eye(nx), format="csc") - sparse.kron(
+    L = -sparse.kron(D1.T @ D1, sparse.eye(nx), format="csc") - sparse.kron(
         sparse.eye(nz), D2.T @ D2, format="csc"
     )
 
-    # Sponge absorbing boundary layer (polynomial damping)
-    # This creates complex-valued slowness: m_eff = m * (1 + i*alpha)
-    # where alpha increases polynomially near boundaries
-    thickness = min(20, nz // 5, nx // 5)  # Adaptive thickness
-    alpha_max = 0.15  # Maximum damping coefficient
-    power = 3  # Polynomial order
-
-    # Compute distance from nearest boundary for each grid point
-    i_grid, j_grid = np.meshgrid(np.arange(nz), np.arange(nx), indexing="ij")
-    dist_z = np.minimum(i_grid, nz - 1 - i_grid)
-    dist_x = np.minimum(j_grid, nx - 1 - j_grid)
-    dist = np.minimum(dist_z, dist_x)
-
-    # Apply polynomial damping profile in boundary region
-    alpha = np.zeros((nz, nx))
-    mask = dist < thickness
-    alpha[mask] = alpha_max * ((thickness - dist[mask]) / thickness) ** power
-
-    # Apply complex damping to model
-    m_damped = m * (1.0 + 1j * alpha.ravel())
-
-    # Simple edge weights for additional stability
+    # Edge weights for absorbing boundary condition
     a = np.ones((nz, nx))
     a[:, [0, -1]] = 0.5
     a[[0, -1], :] = 0.5
     a = a.ravel()
 
-    # Mass term: ω²·diag(a·m_damped)
-    M = sparse.diags(a * m_damped, format="csc")
-
-    # Damping term: 2iω·diag((1-a)·√m_damped)/dz
-    C = sparse.diags((1.0 - a) * np.sqrt(m_damped), format="csc")
-
-    # Helmholtz operator: A = ω²M + 2iωC/dz - ∇²
-    A = omega**2 * M + (2.0j * omega / dz) * C + Laplacian
+    # Helmholtz operator: A = ω²·diag(a·m) + 2iω/dz·diag((1-a)·√m) + L
+    A = (
+        omega**2 * sparse.spdiags(a * m, 0, N, N, format="csc")
+        + (2.0j * omega / dz) * sparse.spdiags((1.0 - a) * np.sqrt(m), 0, N, N, format="csc")
+        + L
+    )
 
     return A
 
@@ -157,7 +127,7 @@ def build_interpolation_operator(
 
 def build_sensitivity_kernel(freq, model_params, wavefield, grid_spacing, grid_dims):
     """
-    Build sensitivity kernel: G = ∂A/∂m · u
+    Build sensitivity kernel: G = d(A(m)·u)/dm
 
     This is a diagonal operator representing how model perturbations
     affect the Helmholtz operator times the wavefield.
@@ -177,12 +147,11 @@ def build_sensitivity_kernel(freq, model_params, wavefield, grid_spacing, grid_d
 
     Returns
     -------
-    G : scipy.sparse.dia_matrix
+    G : scipy.sparse.csc_matrix
         Diagonal sensitivity matrix (N, N)
     """
     nz, nx = grid_dims
     dz, dx = grid_spacing
-    N = nz * nx
 
     omega = 1e-3 * 2.0 * np.pi * freq
 
@@ -190,33 +159,16 @@ def build_sensitivity_kernel(freq, model_params, wavefield, grid_spacing, grid_d
     m = np.asarray(model_params).ravel()
     u = np.asarray(wavefield).ravel()
 
-    # Sponge absorbing boundary layer (SAME as in Helmholtz matrix)
-    thickness = min(20, nz // 5, nx // 5)
-    alpha_max = 0.15
-    power = 3
-
-    i_grid, j_grid = np.meshgrid(np.arange(nz), np.arange(nx), indexing="ij")
-    dist_z = np.minimum(i_grid, nz - 1 - i_grid)
-    dist_x = np.minimum(j_grid, nx - 1 - j_grid)
-    dist = np.minimum(dist_z, dist_x)
-
-    alpha = np.zeros((nz, nx))
-    mask = dist < thickness
-    alpha[mask] = alpha_max * ((thickness - dist[mask]) / thickness) ** power
-
-    # Apply complex damping to model
-    m_damped = m * (1.0 + 1j * alpha.ravel())
-
-    # Edge weights
+    # Edge weights (must match build_helmholtz_matrix)
     a = np.ones((nz, nx))
     a[:, [0, -1]] = 0.5
     a[[0, -1], :] = 0.5
     a = a.ravel()
 
-    # Sensitivity: G = ω²·diag(a·u) + iω·diag((1-a)·u/√m_damped)/dz
-    diag_values = omega**2 * a * u + (1.0j * omega / dz) * (1.0 - a) * u / np.sqrt(m_damped)
-
-    return sparse.diags(diag_values, format="csc")
+    # G = d(A·u)/dm = ω²·diag(a·u) + (2iω/dz)·diag(0.5·(1-a)·u/√m)
+    return omega**2 * sparse.diags(a * u) + (2.0j * omega / dz) * sparse.diags(
+        0.5 * (1.0 - a) * u / np.sqrt(m)
+    )
 
 
 class JacobianOperator(LinearOperator):
@@ -297,49 +249,38 @@ class JacobianOperator(LinearOperator):
             3. Sample at receivers: δd = Pr·δu
         """
         dm = np.asarray(dm).ravel()
-        result = []
+
+        # Output in (nr, ns, nf) order to match solve() and _rmatvec
+        D = np.zeros((self.nr, self.ns, self.nf), dtype=np.complex128)
 
         for i_freq, freq in enumerate(self.f):
-            # Build sensitivity kernel for this frequency (shared across sources)
-            # We need G for each source separately
-            delta_u = np.zeros((self.N, self.ns), dtype=np.complex128)
+            # Compute RHS for all sources: Rk[:, s] = -G_s @ dm
+            Rk = np.zeros((self.N, self.ns), dtype=np.complex128)
 
             for i_src in range(self.ns):
-                # Get wavefield for this source at this frequency
                 u_src = self.U[:, i_src, i_freq]
-
-                # Build G for this source
                 G = build_sensitivity_kernel(freq, self.m, u_src, self.h, self.n)
+                Rk[:, i_src] = -(G @ dm.reshape(-1, 1)).ravel()
 
-                # Compute -G @ dm (element-wise since G is diagonal)
-                rhs = -(G @ dm.reshape(-1, 1)).ravel()
+            # Solve A·δu = Rk for all sources at once
+            delta_u = self.A_solvers[i_freq](Rk)
 
-                # Solve A·δu = rhs
-                delta_u[:, i_src] = self.A_solvers[i_freq](rhs)
+            # Sample at receivers: (nr, ns)
+            D[:, :, i_freq] = (self.Pr @ delta_u).reshape(self.nr, self.ns)
 
-            # Sample at receivers (returns shape (nr, ns))
-            # PyLops @ operator handles the dimensions correctly
-            delta_d = self.Pr @ delta_u
-
-            result.append(delta_d)
-
-        # Stack all frequencies: (nr, ns, nf) → (nr*ns*nf, 1)
-        return np.concatenate([r.ravel() for r in result]).reshape(-1, 1)
+        return D.reshape(-1, 1)
 
     def _rmatvec(self, dd):
         """
         Hermitian transpose (adjoint) action: J^H @ dd
 
-        For complex operators, _rmatvec implements Hermitian transpose.
-        PyLops handles the conjugation automatically when .H is used.
-
         For each frequency:
             1. Reshape dd to (nr, ns, nf)
-            2. Back-project to grid: Pr^H·dd
-            3. Solve adjoint Helmholtz: A^H·v = Pr^H·dd
+            2. Back-project to grid: Pr^T·dd
+            3. Solve adjoint Helmholtz: A^H·v = Pr^T·dd
             4. Apply adjoint sensitivity: gradient += -G^H·v
         """
-        # Reshape data residual to (nr, ns, nf)
+        # Reshape data residual to (nr, ns, nf) — matches solve() output order
         dd_reshaped = np.asarray(dd).reshape(self.nr, self.ns, self.nf)
 
         gradient = np.zeros(self.N, dtype=np.complex128)
@@ -348,18 +289,12 @@ class JacobianOperator(LinearOperator):
             # Get data for this frequency: (nr, ns)
             dd_freq = dd_reshaped[:, :, i_freq]
 
-            # Back-project to grid using Hermitian of Pr
-            # For PyLops operators, .H automatically handles conjugation
-            Pr_H_dd = self.Pr.H @ dd_freq
+            # Back-project to grid: Pr^T @ dd
+            # PyLops Bilinear.T returns 3D (nz, nx, ns), reshape to 2D
+            Pr_T_dd = (self.Pr.T @ dd_freq).reshape(self.N, self.ns)
 
-            # Handle PyLops returning 3D array: reshape to 2D
-            if Pr_H_dd.ndim == 3:
-                # Shape (nz, nx, ns) → (N, ns)
-                Pr_H_dd = Pr_H_dd.reshape(self.N, self.ns)
-
-            # Solve adjoint Helmholtz for all sources: A^H·v = Pr^H·dd
-            # factorized() expects 2D input (N, ns)
-            adjoint_wavefield = self.AH_solvers[i_freq](Pr_H_dd)
+            # Solve adjoint Helmholtz for all sources: A^H·v = Pr^T·dd
+            adjoint_wavefield = self.AH_solvers[i_freq](Pr_T_dd)
 
             # Ensure 2D shape
             if adjoint_wavefield.ndim == 1:
@@ -367,22 +302,19 @@ class JacobianOperator(LinearOperator):
 
             # Apply adjoint sensitivity for each source
             for i_src in range(self.ns):
-                # Forward wavefield for this source
                 u_src = self.U[:, i_src, i_freq]
-
-                # Build G for this source
                 G = build_sensitivity_kernel(freq, self.m, u_src, self.h, self.n)
 
-                # Hermitian of diagonal matrix is conjugate of diagonal
+                # G^H @ v = conj(G) @ v for diagonal G
                 v_src = adjoint_wavefield[:, i_src]
+                result = G.conj() @ v_src
 
-                # Apply adjoint: -G^H @ v = -conj(G) @ v
-                G_conj = G.conj()
-                gradient_contrib = -(G_conj @ v_src.reshape(-1, 1)).ravel()
+                # Convert sparse result to array if needed
+                if hasattr(result, "toarray"):
+                    gradient -= result.toarray().squeeze()
+                else:
+                    gradient -= result
 
-                gradient += gradient_contrib
-
-        # Return complex gradient (real part extraction happens in misfit function)
         return gradient.reshape(-1, 1)
 
 
@@ -436,13 +368,8 @@ class ForwardModeler:
         )
 
         # Build source term: Q = Ps^T @ q
-        Q_raw = self.Ps.T @ model_dict["q"]
-
-        # Handle PyLops returning 3D: reshape to 2D
-        if Q_raw.ndim == 3:
-            self.Q = Q_raw.reshape(self.N, self.ns)
-        else:
-            self.Q = Q_raw
+        # PyLops Bilinear.T may return 3D (nz, nx, ns), reshape to 2D (N, ns)
+        self.Q = (self.Ps.T @ model_dict["q"]).reshape(self.N, self.ns)
 
     def solve(self, model_params, return_wavefields=False):
         """
