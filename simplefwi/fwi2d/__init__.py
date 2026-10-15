@@ -15,6 +15,8 @@ from .dispersion import DispersionReport, assess_dispersion
 from .experiments import camembert_config, nested_surface_acquisition, run_experiment
 from .optimizers import OptimizerRecipe, make_optimizer, validate_optimizer
 from .uncertainty import LocalGaussian, PriorPrecision, SmoothingPrecision, CGConfig, PrecisionError
+from .multiscale import (MultiscaleStage, MultiscaleStageResult, MultiscaleResult,
+                         MultiscaleInversion, refine_slowness_squared)
 
 __all__ = [
     'AcousticFWI','Acquisition','BoundaryConfig','Grid2D','SolveReport','SolverConfig',
@@ -25,4 +27,6 @@ __all__ = [
     'PlanningError','plan_stage','DispersionReport','assess_dispersion','camembert_config','nested_surface_acquisition','run_experiment',
     'OptimizerRecipe','make_optimizer','validate_optimizer','LocalGaussian','PriorPrecision',
     'SmoothingPrecision','CGConfig','PrecisionError',
+    'MultiscaleStage','MultiscaleStageResult','MultiscaleResult','MultiscaleInversion',
+    'refine_slowness_squared',
 ]

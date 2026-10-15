@@ -56,6 +56,10 @@ Three illustrated, executable tutorials cover the public API:
 | [Hessians and uncertainty](notebooks/03_camembert_hessian_uncertainty.ipynb) | Camembert, exact/Gauss–Newton curvature, proper priors, and local covariance |
 
 See the [notebook guide](notebooks/README.md) for setup, execution, and scope.
+For coarse-to-fine grids and low-to-high frequency stages, see
+[multi-resolution and multi-frequency FWI](guides/multiscale.md) and its runnable
+Marmousi example. Each stage uses a fresh native optimizer and preserves physical
+acquisition coordinates.
 
 This small Camembert smoke example creates a circular velocity inclusion,
 simulates two sources, and accepts one native Adam step. It uses same-grid
