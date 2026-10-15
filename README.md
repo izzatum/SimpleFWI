@@ -1,5 +1,7 @@
 # SimpleFWI
 
+[MIT License](LICENSE) · [Tutorial notebooks](notebooks/README.md)
+
 SimpleFWI provides two-dimensional, constant-density acoustic frequency-domain
 full waveform inversion through PyTorch. The `simplefwi.fwi2d` API combines
 explicit SI geometry, complex Helmholtz solves, implicit adjoint gradients,
@@ -44,6 +46,16 @@ driver; then run the last two installation commands. Request
 to that device. CUDA execution remains unvalidated in this release; installation
 does not establish numerical compatibility. See the
 [device and optimizer matrix](guides/optimizers.md).
+
+Three illustrated, executable tutorials cover the public API:
+
+| Tutorial | What you will learn |
+| --- | --- |
+| [Helmholtz on CPU and GPU](notebooks/01_helmholtz_marmousi_cpu_gpu.ipynb) | Marmousi, PML, wavefields, residuals, and device comparisons |
+| [FWI with three optimizers](notebooks/02_fwi_marmousi_optimizers.ipynb) | Adam, RMSprop, and L-BFGS with comparable objectives and measured work |
+| [Hessians and uncertainty](notebooks/03_camembert_hessian_uncertainty.ipynb) | Camembert, exact/Gauss–Newton curvature, proper priors, and local covariance |
+
+See the [notebook guide](notebooks/README.md) for setup, execution, and scope.
 
 This small Camembert smoke example creates a circular velocity inclusion,
 simulates two sources, and accepts one native Adam step. It uses same-grid
