@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "units": {
+    "coordinates": "m",
+    "velocity": "m/s",
+    "frequency": "Hz"
+  },
+  "model": {
+    "kind": "marmousi",
+    "path": "../../../data/marmousi.mat",
+    "velocity_unit": "m/s",
+    "crop_indices": [
+      20,
+      45,
+      120,
+      161
+    ],
+    "spacing_m": 25.0,
+    "initial_scale": 0.98
+  },
+  "boundary": {
+    "top": "pml",
+    "pml_cells": 12,
+    "sigma_max": 60.0,
+    "alpha": 0.0
+  },
+  "acquisition": {
+    "kind": "nested_surface",
+    "source_count": 2,
+    "source_depth_index": 1,
+    "receiver_depth_index": 2,
+    "receiver_stride": 2
+  },
+  "frequencies_hz": [
+    2.0
+  ],
+  "velocity_bounds_m_s": [
+    1400.0,
+    6500.0
+  ],
+  "solver": {
+    "method": "direct",
+    "device": "cpu",
+    "dtype": "complex128",
+    "rtol": 1e-10,
+    "atol": 1e-12,
+    "memory_budget_bytes": 134217728
+  },
+  "source_batch_size": 1,
+  "optimizer": {
+    "name": "Adam",
+    "lr": 0.02
+  },
+  "steps": 1,
+  "recording": {
+    "fields": [
+      "velocity",
+      "slowness_squared",
+      "physical_gradient"
+    ],
+    "checkpoint_cadence": 1
+  },
+  "preflight": {
+    "max_compact_dof": 10000,
+    "max_forward_rhs": 32,
+    "max_phase_error": 0.01,
+    "classification": "algebraic_smoke"
+  },
+  "seed": 17,
+  "planned_unrun": [
+    {
+      "candidate_spacing_m": [
+        25.0,
+        12.5,
+        6.25
+      ],
+      "candidate_frequencies_hz": [
+        2.0,
+        5.0,
+        10.0,
+        15.0,
+        20.0,
+        30.0
+      ],
+      "nested_source_counts": [
+        2,
+        3,
+        5,
+        9,
+        17,
+        33,
+        "one_per_usable_horizontal_column"
+      ],
+      "status": "planned_unrun",
+      "gates": [
+        "dispersion_at_minimum_allowed_velocity",
+        "independent_PML_calibration",
+        "independent_discretization_accuracy",
+        "solver_true_residual",
+        "memory_and_runtime_budget"
+      ],
+      "note": "No full Marmousi inversion or maximum useful frequency/source-count claim. Refinement adds no geological resolution."
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "units": {
+    "coordinates": "m",
+    "velocity": "m/s",
+    "frequency": "Hz"
+  },
+  "model": {
+    "kind": "camembert",
+    "grid": {
+      "shape": [
+        17,
+        17
+      ],
+      "spacing_m": [
+        10.0,
+        10.0
+      ],
+      "origin_m": [
+        0.0,
+        0.0
+      ]
+    },
+    "centre_m": [
+      80.0,
+      80.0
+    ],
+    "radius_m": 30.0,
+    "background_m_s": 1500.0,
+    "inclusion_m_s": 1700.0
+  },
+  "boundary": {
+    "top": "pml",
+    "pml_cells": 8,
+    "sigma_max": 80.0,
+    "alpha": 0.0
+  },
+  "acquisition": {
+    "sources_m": [
+      [
+        20.0,
+        30.0
+      ],
+      [
+        20.0,
+        130.0
+      ]
+    ],
+    "receivers_m": [
+      [
+        30.0,
+        30.0
+      ],
+      [
+        30.0,
+        60.0
+      ],
+      [
+        30.0,
+        100.0
+      ],
+      [
+        30.0,
+        130.0
+      ]
+    ]
+  },
+  "frequencies_hz": [
+    2.0
+  ],
+  "velocity_bounds_m_s": [
+    1400.0,
+    2000.0
+  ],
+  "solver": {
+    "method": "direct",
+    "device": "cpu",
+    "dtype": "complex128",
+    "rtol": 1e-10,
+    "atol": 1e-12,
+    "memory_budget_bytes": 134217728
+  },
+  "source_batch_size": 1,
+  "optimizer": {
+    "name": "Adam",
+    "lr": 0.02
+  },
+  "steps": 1,
+  "recording": {
+    "fields": [
+      "velocity",
+      "slowness_squared"
+    ],
+    "checkpoint_cadence": 1
+  },
+  "preflight": {
+    "max_compact_dof": 10000,
+    "max_forward_rhs": 32,
+    "max_phase_error": 0.01,
+    "classification": "algebraic_smoke"
+  },
+  "seed": 17
+}

@@ -1,0 +1,734 @@
+{
+  "schema_version": 1,
+  "torch_version": "2.12.0+cpu",
+  "config": {
+    "schema_version": 1,
+    "units": {
+      "coordinates": "m",
+      "velocity": "m/s",
+      "frequency": "Hz"
+    },
+    "model": {
+      "kind": "marmousi",
+      "path": "../../../data/marmousi.mat",
+      "velocity_unit": "m/s",
+      "crop_indices": [
+        20,
+        45,
+        120,
+        161
+      ],
+      "spacing_m": 25.0,
+      "initial_scale": 0.98
+    },
+    "boundary": {
+      "top": "pml",
+      "pml_cells": 12,
+      "sigma_max": 60.0,
+      "alpha": 0.0
+    },
+    "acquisition": {
+      "kind": "nested_surface",
+      "source_count": 2,
+      "source_depth_index": 1,
+      "receiver_depth_index": 2,
+      "receiver_stride": 2
+    },
+    "frequencies_hz": [
+      2.0
+    ],
+    "velocity_bounds_m_s": [
+      1400.0,
+      6500.0
+    ],
+    "solver": {
+      "method": "direct",
+      "device": "cpu",
+      "dtype": "complex128",
+      "rtol": 1e-10,
+      "atol": 1e-12,
+      "memory_budget_bytes": 134217728
+    },
+    "source_batch_size": 1,
+    "optimizer": {
+      "name": "Adam",
+      "lr": 0.02
+    },
+    "steps": 1,
+    "recording": {
+      "fields": [
+        "velocity",
+        "slowness_squared",
+        "physical_gradient"
+      ],
+      "checkpoint_cadence": 1
+    },
+    "preflight": {
+      "max_compact_dof": 10000,
+      "max_forward_rhs": 32,
+      "max_phase_error": 0.01,
+      "classification": "algebraic_smoke"
+    },
+    "seed": 17,
+    "planned_unrun": [
+      {
+        "candidate_spacing_m": [
+          25.0,
+          12.5,
+          6.25
+        ],
+        "candidate_frequencies_hz": [
+          2.0,
+          5.0,
+          10.0,
+          15.0,
+          20.0,
+          30.0
+        ],
+        "nested_source_counts": [
+          2,
+          3,
+          5,
+          9,
+          17,
+          33,
+          "one_per_usable_horizontal_column"
+        ],
+        "status": "planned_unrun",
+        "gates": [
+          "dispersion_at_minimum_allowed_velocity",
+          "independent_PML_calibration",
+          "independent_discretization_accuracy",
+          "solver_true_residual",
+          "memory_and_runtime_budget"
+        ],
+        "note": "No full Marmousi inversion or maximum useful frequency/source-count claim. Refinement adds no geological resolution."
+      }
+    ]
+  },
+  "identity": {
+    "parameterization": "dense",
+    "dataset_hash": "6d630a55f4c443d67256c04d1a534cc312af55068dfea060f4e64030e10fd781",
+    "model_hash": "453230a0f04a13d8ce7d3f3629341439a7b39cebcd21346d0e9a52f8f62b31e7",
+    "config_hash": "11d803a9a41cbd46cbd7503a456faee18082b656f3badf2fdf6dabd764ddc7bb",
+    "source_hash": "04cb51ed977db69c073d5846702e2d9b71515ef2af28827e9a78f6520af6f0c3",
+    "grid_hash": "c7a1966e06397b377593012b347c2b8e4a8f1f7b2cd5f0cbc0e6a3fb539ec5a0"
+  },
+  "provenance": {
+    "kind": "marmousi",
+    "path": "/workspace/SimpleFWI/data/marmousi.mat",
+    "file_sha256": "6756a104e3e5eb641ba4ba05c7fb983978e13c9885fac87c4909e51a79cad572",
+    "input_velocity_unit": "m/s",
+    "classification": "same_grid_algebraic_data",
+    "crop_indices": [
+      20,
+      45,
+      120,
+      161
+    ],
+    "interpolation": "bilinear; no added geological resolution"
+  },
+  "grid": {
+    "shape": [
+      25,
+      41
+    ],
+    "spacing_m": [
+      25.0,
+      25.0
+    ],
+    "origin_m": [
+      500.0,
+      2800.0
+    ]
+  },
+  "boundary": {
+    "top": "pml",
+    "pml_cells": 12,
+    "sigma_max": 60.0,
+    "alpha": 0.0
+  },
+  "accepted_steps": 1,
+  "history": [
+    {
+      "accepted_step": 1,
+      "loss": 0.0009041421546567541,
+      "closure_evaluations": 1,
+      "diagnostics": {
+        "velocity_min_m_s": 1613.9037126461255,
+        "velocity_max_m_s": 2482.9593964163664,
+        "active_cells": 1025,
+        "saturated_cells": 0,
+        "representation": "dense",
+        "learning_rates": [
+          0.02
+        ],
+        "weight_decay": [
+          0.0
+        ],
+        "optimizer_class": "Adam"
+      },
+      "accepted": true
+    }
+  ],
+  "accuracy": {
+    "validation_status": "screened_only",
+    "physical_accuracy_validated": false,
+    "data_classification": "same_grid_algebraic_data",
+    "dispersion_scope": "local_homogeneous_symbol_only",
+    "phase_error": 0.0021101058274295426,
+    "phase_error_target": 0.01,
+    "frequency_ceiling_hz": 4.308029623514185,
+    "dispersion_passed": true,
+    "pml_validation": "unrun_for_this_case",
+    "independent_discretization": "unrun",
+    "true_residual_reports": [
+      {
+        "relative_residual": 3.795778591019454e-15,
+        "absolute_residual": 6.073245745631127e-18,
+        "iterations": 1,
+        "convergence_reason": "direct_factorization",
+        "elapsed_seconds": 0.02113947700013341,
+        "memory_bytes": 3392416,
+        "converged": true
+      },
+      {
+        "relative_residual": 3.940009309134696e-15,
+        "absolute_residual": 6.304014894615514e-18,
+        "iterations": 1,
+        "convergence_reason": "direct_factorization",
+        "elapsed_seconds": 0.0015094289999524335,
+        "memory_bytes": 3088868,
+        "converged": true
+      }
+    ]
+  },
+  "source_coverage": {
+    "source_count": 2,
+    "receiver_count": 21,
+    "usable_horizontal_columns": 41,
+    "distinct_source_x": 2,
+    "sampled_aperture_m": 1000.0,
+    "usable_aperture_m": 1000.0,
+    "marginal_information_benefit": "unmeasured",
+    "practical_source_limit": "one_per_usable_horizontal_column"
+  },
+  "resources": {
+    "physical_cells": 1025,
+    "compact_dof": 2961,
+    "padded_cells": 3185,
+    "forward_rhs": 2,
+    "setup_seconds": 0.029327082000008886,
+    "forward_all_rhs_seconds": 0.023809298999822204,
+    "optimization_seconds": 0.08774669200010976,
+    "gradient_seconds": 0.007389350000039485,
+    "physical_gradient_norm": 13451.434958413398,
+    "hvp_seconds": null,
+    "estimated_matrix_free_bytes": 5205250,
+    "memory_estimate_scope": "matrix_free_fgmres_no_direct_factorization",
+    "direct_factorization_budget_scope": "retained_LU_only",
+    "max_forward_report_bytes": 3392416,
+    "process_peak_rss_bytes": 457334784,
+    "rss_scope": "whole_process_high_water_mark_including_imports",
+    "archive_bytes": 35112,
+    "recorder_peak_buffer_bytes": 8388608,
+    "recording_comparison": "unrun",
+    "device": "cpu",
+    "runpod_cost_usd": 0.0,
+    "total_seconds": 0.8300016419998428
+  },
+  "planned_unrun": [
+    {
+      "candidate_spacing_m": [
+        25.0,
+        12.5,
+        6.25
+      ],
+      "candidate_frequencies_hz": [
+        2.0,
+        5.0,
+        10.0,
+        15.0,
+        20.0,
+        30.0
+      ],
+      "nested_source_counts": [
+        2,
+        3,
+        5,
+        9,
+        17,
+        33,
+        "one_per_usable_horizontal_column"
+      ],
+      "status": "planned_unrun",
+      "gates": [
+        "dispersion_at_minimum_allowed_velocity",
+        "independent_PML_calibration",
+        "independent_discretization_accuracy",
+        "solver_true_residual",
+        "memory_and_runtime_budget"
+      ],
+      "note": "No full Marmousi inversion or maximum useful frequency/source-count claim. Refinement adds no geological resolution."
+    }
+  ],
+  "artifacts": {
+    "accepted_archive": "accepted.h5",
+    "observed": "observed.h5",
+    "checkpoint": "checkpoint.pt",
+    "retention": "Only this manifest is tracked; binary run outputs remain at /tmp/simplefwi-marmousi-task12 and are reproducible with the saved config."
+  },
+  "candidate_screening": [
+    {
+      "full_domain_grid": {
+        "shape": [
+          121,
+          373
+        ],
+        "spacing_m": [
+          25.0,
+          25.0
+        ],
+        "origin_m": [
+          0.0,
+          -200.0
+        ]
+      },
+      "frequency_hz": 2.0,
+      "phase_error": 0.0021101058274295426,
+      "phase_error_scope": "local_homogeneous_symbol_only",
+      "spatial_screen_passed": true,
+      "frequency_ceiling_hz": 4.308029623514185,
+      "linear_solves": "forward_and_physical_gradient_executed_separately",
+      "pml_validation": "unrun",
+      "resource_preflight": "passed_in_separate_full_domain_report",
+      "physical_accuracy_validated": false,
+      "evidence": "benchmarks/fwi2d/marmousi-full-cpu.json"
+    },
+    {
+      "full_domain_grid": {
+        "shape": [
+          121,
+          373
+        ],
+        "spacing_m": [
+          25.0,
+          25.0
+        ],
+        "origin_m": [
+          0.0,
+          -200.0
+        ]
+      },
+      "frequency_hz": 5.0,
+      "phase_error": 0.01360058330779812,
+      "phase_error_scope": "local_homogeneous_symbol_only",
+      "spatial_screen_passed": false,
+      "frequency_ceiling_hz": 4.308029623514185,
+      "linear_solves": "unrun",
+      "pml_validation": "unrun",
+      "resource_preflight": "unrun",
+      "physical_accuracy_validated": false
+    },
+    {
+      "full_domain_grid": {
+        "shape": [
+          121,
+          373
+        ],
+        "spacing_m": [
+          25.0,
+          25.0
+        ],
+        "origin_m": [
+          0.0,
+          -200.0
+        ]
+      },
+      "frequency_hz": 10.0,
+      "phase_error": 0.06166330208816251,
+      "phase_error_scope": "local_homogeneous_symbol_only",
+      "spatial_screen_passed": false,
+      "frequency_ceiling_hz": 4.308029623514185,
+      "linear_solves": "unrun",
+      "pml_validation": "unrun",
+      "resource_preflight": "unrun",
+      "physical_accuracy_validated": false
+    },
+    {
+      "full_domain_grid": {
+        "shape": [
+          121,
+          373
+        ],
+        "spacing_m": [
+          25.0,
+          25.0
+        ],
+        "origin_m": [
+          0.0,
+          -200.0
+        ]
+      },
+      "frequency_hz": 15.0,
+      "phase_error": 0.18841639960007028,
+      "phase_error_scope": "local_homogeneous_symbol_only",
+      "spatial_screen_passed": false,
+      "frequency_ceiling_hz": 4.308029623514185,
+      "linear_solves": "unrun",
+      "pml_validation": "unrun",
+      "resource_preflight": "unrun",
+      "physical_accuracy_validated": false
+    },
+    {
+      "full_domain_grid": {
+        "shape": [
+          121,
+          373
+        ],
+        "spacing_m": [
+          25.0,
+          25.0
+        ],
+        "origin_m": [
+          0.0,
+          -200.0
+        ]
+      },
+      "frequency_hz": 20.0,
+      "phase_error": null,
+      "phase_error_scope": "local_homogeneous_symbol_only",
+      "spatial_screen_passed": false,
+      "frequency_ceiling_hz": 4.308029623514185,
+      "linear_solves": "unrun",
+      "pml_validation": "unrun",
+      "resource_preflight": "unrun",
+      "physical_accuracy_validated": false
+    },
+    {
+      "full_domain_grid": {
+        "shape": [
+          121,
+          373
+        ],
+        "spacing_m": [
+          25.0,
+          25.0
+        ],
+        "origin_m": [
+          0.0,
+          -200.0
+        ]
+      },
+      "frequency_hz": 30.0,
+      "phase_error": null,
+      "phase_error_scope": "local_homogeneous_symbol_only",
+      "spatial_screen_passed": false,
+      "frequency_ceiling_hz": 4.308029623514185,
+      "linear_solves": "unrun",
+      "pml_validation": "unrun",
+      "resource_preflight": "unrun",
+      "physical_accuracy_validated": false
+    },
+    {
+      "full_domain_grid": {
+        "shape": [
+          241,
+          745
+        ],
+        "spacing_m": [
+          12.5,
+          12.5
+        ],
+        "origin_m": [
+          0.0,
+          -200.0
+        ]
+      },
+      "frequency_hz": 2.0,
+      "phase_error": 0.0005252768043020328,
+      "phase_error_scope": "local_homogeneous_symbol_only",
+      "spatial_screen_passed": true,
+      "frequency_ceiling_hz": 8.61605924702837,
+      "linear_solves": "unrun",
+      "pml_validation": "unrun",
+      "resource_preflight": "unrun",
+      "physical_accuracy_validated": false
+    },
+    {
+      "full_domain_grid": {
+        "shape": [
+          241,
+          745
+        ],
+        "spacing_m": [
+          12.5,
+          12.5
+        ],
+        "origin_m": [
+          0.0,
+          -200.0
+        ]
+      },
+      "frequency_hz": 5.0,
+      "phase_error": 0.0033076908659948057,
+      "phase_error_scope": "local_homogeneous_symbol_only",
+      "spatial_screen_passed": true,
+      "frequency_ceiling_hz": 8.61605924702837,
+      "linear_solves": "unrun",
+      "pml_validation": "unrun",
+      "resource_preflight": "unrun",
+      "physical_accuracy_validated": false
+    },
+    {
+      "full_domain_grid": {
+        "shape": [
+          241,
+          745
+        ],
+        "spacing_m": [
+          12.5,
+          12.5
+        ],
+        "origin_m": [
+          0.0,
+          -200.0
+        ]
+      },
+      "frequency_hz": 10.0,
+      "phase_error": 0.01360058330779812,
+      "phase_error_scope": "local_homogeneous_symbol_only",
+      "spatial_screen_passed": false,
+      "frequency_ceiling_hz": 8.61605924702837,
+      "linear_solves": "unrun",
+      "pml_validation": "unrun",
+      "resource_preflight": "unrun",
+      "physical_accuracy_validated": false
+    },
+    {
+      "full_domain_grid": {
+        "shape": [
+          241,
+          745
+        ],
+        "spacing_m": [
+          12.5,
+          12.5
+        ],
+        "origin_m": [
+          0.0,
+          -200.0
+        ]
+      },
+      "frequency_hz": 15.0,
+      "phase_error": 0.032137453456079434,
+      "phase_error_scope": "local_homogeneous_symbol_only",
+      "spatial_screen_passed": false,
+      "frequency_ceiling_hz": 8.61605924702837,
+      "linear_solves": "unrun",
+      "pml_validation": "unrun",
+      "resource_preflight": "unrun",
+      "physical_accuracy_validated": false
+    },
+    {
+      "full_domain_grid": {
+        "shape": [
+          241,
+          745
+        ],
+        "spacing_m": [
+          12.5,
+          12.5
+        ],
+        "origin_m": [
+          0.0,
+          -200.0
+        ]
+      },
+      "frequency_hz": 20.0,
+      "phase_error": 0.06166330208816251,
+      "phase_error_scope": "local_homogeneous_symbol_only",
+      "spatial_screen_passed": false,
+      "frequency_ceiling_hz": 8.61605924702837,
+      "linear_solves": "unrun",
+      "pml_validation": "unrun",
+      "resource_preflight": "unrun",
+      "physical_accuracy_validated": false
+    },
+    {
+      "full_domain_grid": {
+        "shape": [
+          241,
+          745
+        ],
+        "spacing_m": [
+          12.5,
+          12.5
+        ],
+        "origin_m": [
+          0.0,
+          -200.0
+        ]
+      },
+      "frequency_hz": 30.0,
+      "phase_error": 0.18841639960007028,
+      "phase_error_scope": "local_homogeneous_symbol_only",
+      "spatial_screen_passed": false,
+      "frequency_ceiling_hz": 8.61605924702837,
+      "linear_solves": "unrun",
+      "pml_validation": "unrun",
+      "resource_preflight": "unrun",
+      "physical_accuracy_validated": false
+    },
+    {
+      "full_domain_grid": {
+        "shape": [
+          481,
+          1489
+        ],
+        "spacing_m": [
+          6.25,
+          6.25
+        ],
+        "origin_m": [
+          0.0,
+          -200.0
+        ]
+      },
+      "frequency_hz": 2.0,
+      "phase_error": 0.0001311795873910615,
+      "phase_error_scope": "local_homogeneous_symbol_only",
+      "spatial_screen_passed": true,
+      "frequency_ceiling_hz": 17.23211849405674,
+      "linear_solves": "unrun",
+      "pml_validation": "unrun",
+      "resource_preflight": "unrun",
+      "physical_accuracy_validated": false
+    },
+    {
+      "full_domain_grid": {
+        "shape": [
+          481,
+          1489
+        ],
+        "spacing_m": [
+          6.25,
+          6.25
+        ],
+        "origin_m": [
+          0.0,
+          -200.0
+        ]
+      },
+      "frequency_hz": 5.0,
+      "phase_error": 0.0008214010609151057,
+      "phase_error_scope": "local_homogeneous_symbol_only",
+      "spatial_screen_passed": true,
+      "frequency_ceiling_hz": 17.23211849405674,
+      "linear_solves": "unrun",
+      "pml_validation": "unrun",
+      "resource_preflight": "unrun",
+      "physical_accuracy_validated": false
+    },
+    {
+      "full_domain_grid": {
+        "shape": [
+          481,
+          1489
+        ],
+        "spacing_m": [
+          6.25,
+          6.25
+        ],
+        "origin_m": [
+          0.0,
+          -200.0
+        ]
+      },
+      "frequency_hz": 10.0,
+      "phase_error": 0.0033076908659948057,
+      "phase_error_scope": "local_homogeneous_symbol_only",
+      "spatial_screen_passed": true,
+      "frequency_ceiling_hz": 17.23211849405674,
+      "linear_solves": "unrun",
+      "pml_validation": "unrun",
+      "resource_preflight": "unrun",
+      "physical_accuracy_validated": false
+    },
+    {
+      "full_domain_grid": {
+        "shape": [
+          481,
+          1489
+        ],
+        "spacing_m": [
+          6.25,
+          6.25
+        ],
+        "origin_m": [
+          0.0,
+          -200.0
+        ]
+      },
+      "frequency_hz": 15.0,
+      "phase_error": 0.007527133466363578,
+      "phase_error_scope": "local_homogeneous_symbol_only",
+      "spatial_screen_passed": true,
+      "frequency_ceiling_hz": 17.23211849405674,
+      "linear_solves": "unrun",
+      "pml_validation": "unrun",
+      "resource_preflight": "unrun",
+      "physical_accuracy_validated": false
+    },
+    {
+      "full_domain_grid": {
+        "shape": [
+          481,
+          1489
+        ],
+        "spacing_m": [
+          6.25,
+          6.25
+        ],
+        "origin_m": [
+          0.0,
+          -200.0
+        ]
+      },
+      "frequency_hz": 20.0,
+      "phase_error": 0.01360058330779812,
+      "phase_error_scope": "local_homogeneous_symbol_only",
+      "spatial_screen_passed": false,
+      "frequency_ceiling_hz": 17.23211849405674,
+      "linear_solves": "unrun",
+      "pml_validation": "unrun",
+      "resource_preflight": "unrun",
+      "physical_accuracy_validated": false
+    },
+    {
+      "full_domain_grid": {
+        "shape": [
+          481,
+          1489
+        ],
+        "spacing_m": [
+          6.25,
+          6.25
+        ],
+        "origin_m": [
+          0.0,
+          -200.0
+        ]
+      },
+      "frequency_hz": 30.0,
+      "phase_error": 0.032137453456079434,
+      "phase_error_scope": "local_homogeneous_symbol_only",
+      "spatial_screen_passed": false,
+      "frequency_ceiling_hz": 17.23211849405674,
+      "linear_solves": "unrun",
+      "pml_validation": "unrun",
+      "resource_preflight": "unrun",
+      "physical_accuracy_validated": false
+    }
+  ]
+}
