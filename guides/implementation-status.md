@@ -65,13 +65,19 @@ with **16 saved figures**, independent headless execution and scientific/visual
 review. They demonstrate Marmousi forward solves, Adam/RMSprop/L-BFGS workflows,
 and Camembert exact/Gauss–Newton curvature with local uncertainty.
 
-RunPod account/rate/inventory access now works through GraphQL and API v2.
+RunPod account/rate/inventory access worked through GraphQL and API v2 during
+the first two allocations. A later published configuration removed the key's
+`api.runpod.io` destination: the latest read-only retry received API 401 and
+REST Cloudflare 403/error 1010, with no new allocation. Restore both provider
+destinations on the existing secret in environment settings; see the
+[retry record](../benchmarks/fwi2d/results/runpod-retry.json).
 Two bounded A40 attempts were made: direct SSH was unreachable on the first;
 the second explicitly exposed authenticated Jupyter on HTTP port 8888, but its
 proxy returned Cloudflare error 1010. The Jupyter transport had passed a local
 upload/execute/download test. No remote numerical workload executed.
 **Both pods were terminated/deleted and their absence verified; no persistent
-storage remains.** Final itemized provider billing is still pending. The
+storage was created.** Those cleanup confirmations are historical; current
+inventory and final itemized billing cannot be refreshed. The
 [attempt manifest](../benchmarks/fwi2d/results/runpod-attempts.json) distinguishes
 observed account debits, estimates, and final billing. The
 [RunPod protocol](../benchmarks/fwi2d/runpod_protocol.md) records the USD 10

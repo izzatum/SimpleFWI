@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "task_id": "fwi-redesign-task-13",
-  "recorded_at_utc": "2026-10-15T15:15:41.384053+00:00",
-  "status": "blocked_provider_workload_transport",
+  "recorded_at_utc": "2026-10-15T15:36:54.930491+00:00",
+  "status": "blocked_before_allocation_after_published_binding_change",
   "gpu_validation": "unrun",
   "gpu_workloads_executed": 0,
   "provider_resource_mutations": [
@@ -33,12 +33,13 @@
   ],
   "environment_configuration": {
     "credential_destinations_saved": [
-      "api.runpod.io",
       "rest.runpod.io"
     ],
-    "runtime_authentication_verified": true,
-    "publication": "published/current base configuration confirmed by parent; runtime API credential access working",
-    "publication_tool_available": false
+    "runtime_authentication_verified": false,
+    "publication": "published configuration now omits api.runpod.io from the existing secret destination list",
+    "publication_tool_available": false,
+    "previous_successful_authentication": "historical fresh_runtime_retry_2026-10-15T14:51:44Z observation retained below",
+    "required_correction": "Edit existing RUNPOD_API_KEY destinations in environment settings to include api.runpod.io and rest.runpod.io; save and publish. Tool rejected destination change with INVALID_ARGUMENT; no binding change saved."
   },
   "observations": [
     {
@@ -129,6 +130,17 @@
       },
       "today_account_billing_reported_total_usd": 0.0,
       "available_a40_quote_usd_per_hour": 0.59
+    },
+    {
+      "phase": "fresh_retry_2026-10-15T15:35:34Z",
+      "evidence": "runpod-retry.json",
+      "provider_mutations": 0,
+      "new_gpu_numerical_workloads": 0,
+      "permitted_rest_inventory_billing_status": 403,
+      "rest_error": "Cloudflare error 1010",
+      "api_account_billing_status": 401,
+      "api_credential_binding_present": false,
+      "current_inventory_and_billing_available": false
     }
   ],
   "budget": {
@@ -139,11 +151,11 @@
     "known_new_resource_allocation_cost": null,
     "prior_task_cost": null,
     "final_task_cost": null,
-    "credit_sufficient_for_budget": true,
-    "account_hourly_rate": 0,
+    "credit_sufficient_for_budget": null,
+    "account_hourly_rate": null,
     "selected_gpu_hourly_rate": 0.59,
     "storage_hourly_rate": 0.005952380952380952,
-    "launch_envelope_verified": true,
+    "launch_envelope_verified": false,
     "observed_account_debit_after_first_attempt": 0.0623020102,
     "observed_total_account_debit": 0.0623020102
   },
@@ -155,20 +167,24 @@
     "task_created_resources_requiring_cleanup": false,
     "external_controller_deadline_verified": true,
     "all_created_pods_provider_confirmed_deleted": true,
-    "all_network_and_global_volume_inventories_empty": true
+    "all_network_and_global_volume_inventories_empty": true,
+    "current_verification_available": false,
+    "historical_confirmed_cleanup_snapshot_utc": "2026-10-15T15:16:11.168947+00:00"
   },
   "blockers": [
-    "Runtime GPU workload transport unavailable: direct SSH refused; corrected authenticated explicitly exposed Jupyter8888/http endpoint returnedCloudflare403/error1010",
-    "No GPU numerical workload executed; no third attempt performed",
-    "Final itemized expenditure remains unsettled despite confirmed provider deletion"
+    "Published RUNPOD_API_KEY binding omits api.runpod.io; current account/billing HTTP 401 cannot establish real-key expiry",
+    "Permitted REST inventory/billing endpoints still return Cloudflare HTTP 403/error 1010",
+    "Current account, inventory and itemized spending cannot be refreshed; no new allocation was made",
+    "Prior runtime SSH/Jupyter transport unavailable; binding repair alone does not establish workload access",
+    "Final itemized expenditure remains unknown; prior provider-confirmed deletion retained as historical evidence"
   ],
   "performance": null,
   "claims": [
-    "GraphQL/APIv2 provider account access works; previous real-key-expired interpretations are unsupported",
-    "two sequential task-owned A40 allocation attempts were terminated and provider absence verified",
-    "no GPU numerical validation, timings, accuracy or speedup measured",
-    "no persistent storage created and no unrelated resource changed",
-    "observed balance debits are not a settled final task bill"
+    "API v2/GraphQL worked during the prior two attempts; the latest published credential destination list has changed",
+    "Latest read-only retry created no new resource or allocation cost and ran no GPU numerical workload",
+    "Two earlier task-owned A40 pods were terminated and provider absence verified at the recorded historical snapshot",
+    "No persistent storage was created during the historical attempts; no unrelated resource was changed",
+    "Observed historical account debits are not a settled final task bill"
   ],
   "provider_confirmed_deleted_resource_ids": [
     "144hxuu5czqg3h",
@@ -176,5 +192,6 @@
   ],
   "attempt_evidence": "runpod-attempts.json",
   "final_provider_snapshot_utc": "2026-10-15T15:16:11.168947+00:00",
-  "credit_sufficient_for_budget": true
+  "credit_sufficient_for_budget": null,
+  "latest_retry_evidence": "runpod-retry.json"
 }

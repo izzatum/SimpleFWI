@@ -1,8 +1,13 @@
 # RunPod validation results
 
-**GPU validation remains unrun; both task-created pods are deleted.** Account,
-credit, inventory and price access now works through API v2/GraphQL. The
-[preflight manifest](runpod-preflight.json) records that access; the
+**GPU validation remains unrun; both earlier task-created pods were confirmed deleted.**
+The [latest read-only retry](runpod-retry.json) created no resource: REST remains
+blocked by Cloudflare 403/error 1010, and API account/billing return 401 after
+publication removed `api.runpod.io` from the existing key's destination list.
+Restore both provider hosts on that existing entry in environment settings,
+then save and publish. No binding correction was saved by the configuration
+tool, which requires editing the existing entry in the UI.
+The [preflight manifest](runpod-preflight.json) records current and historical access; the
 [attempt manifest](runpod-attempts.json) records two bounded A40 deployments and
 provider-confirmed cleanup.
 
@@ -19,7 +24,8 @@ ownership-inventory checks. Network/global-volume inventories are empty; no
 persistent volumes were created. Account balance observations and a conservative
 allocated-time cost estimate are recorded in the manifest. Final itemized billing
 has not settled, so a zero-record billing response is not interpreted as free
-compute. No paid resource remains active.
+compute. The latest blocked retry could not refresh inventory or settled billing;
+the prior deletion confirmations remain historical evidence.
 
 Follow the [bounded protocol](../runpod_protocol.md) before a future attempt. The task ceiling is USD 10 for every billed resource, with at least USD 2 reserved for shutdown/storage/metering and at most USD 8 minus prior task expenditure available for compute. Do not launch if costs or reliable shutdown cannot be bounded.
 

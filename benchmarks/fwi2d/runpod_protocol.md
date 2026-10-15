@@ -1,6 +1,12 @@
 # Bounded RunPod validation protocol and attempted execution
 
-**GPU numerical validation remains incomplete. Both task-created Pods were terminated and provider absence verified.** The account/API configuration now works; environment publication is current. Two bounded allocations of one A40 at a time were attempted, with no numerical GPU workload executed. [Structured lifecycle evidence](results/runpod-attempts.json) records the exact timeline, budget and cleanup; [preflight status](results/runpod-preflight.json) preserves the access history.
+**GPU numerical validation remains incomplete. Both earlier task-created Pods were terminated and provider absence verified.** Two bounded allocations of one A40 at a time were attempted, with no numerical GPU workload executed. [Structured lifecycle evidence](results/runpod-attempts.json) records the exact timeline, budget and cleanup; [preflight status](results/runpod-preflight.json) preserves the access history.
+
+## Latest retry: 15 October 2026, 15:35 UTC
+
+The user-requested [read-only retry](results/runpod-retry.json) was blocked before allocation. The newly published `RUNPOD_API_KEY` binding permits only `rest.runpod.io`; its previously working `api.runpod.io` destination is missing. REST inventory and billing still return Cloudflare HTTP 403/error 1010, while API account and billing return HTTP 401. This does not establish that the real key expired. No new resource was created, no new allocation charge was incurred, and no GPU workload ran. Current inventory and settled billing could not be refreshed; the earlier deletion confirmations below remain historical evidence.
+
+Edit the **existing** secret in environment settings to allow both `api.runpod.io` and `rest.runpod.io`, then save and publish. The configuration tool rejected this destination change with `INVALID_ARGUMENT` and explicitly requires editing the existing entry; no binding change was saved and no duplicate secret is needed. Restoring the binding permits a fresh control-plane check; it does not by itself resolve the earlier SSH/Jupyter access failures. Recheck control, billing and a supported workload path before another bounded allocation.
 
 ## Observed outcome on 15 October 2026
 
@@ -18,7 +24,7 @@
 
 Attempt 1 was created at 22:59:09 MYT and provider-confirmed absent at 23:05:33 MYT. Attempt 2 was created at 23:13:29 MYT and provider-confirmed absent at 23:14:22 MYT. These times are Malaysia Time (UTC+8); structured audit records use UTC. Each controller issued DELETE, confirmed GET 404 and two successive task-name-filtered empty inventory checks. No task-created billable resource remains, no persistent storage was created, and no unrelated resource was changed. There was no third allocation.
 
-The corrected 8888/http denial is a provider Cloudflare error 1010 response despite the supplied Jupyter token, rather than evidence of a missing API key or an expired real key. It prevented reaching a usable Jupyter session. No User-Agent/WAF/proxy bypass was attempted. A supported workload connection permitted by the provider/site-owner access policy is needed before another paid experiment; repeating publication or asking for a duplicate API secret is not indicated by the current evidence.
+The corrected 8888/http denial was a provider Cloudflare error 1010 response despite the supplied Jupyter token, rather than evidence of a missing API key or an expired real key. It prevented reaching a usable Jupyter session. No User-Agent/WAF/proxy bypass was attempted. A supported workload connection permitted by the provider/site-owner access policy is needed before another paid experiment. The later missing credential destination is a separate issue, described above; a duplicate API secret is not needed.
 
 The pinned image was `runpod/pytorch:1.4.0-cu1300-torch2120-ubuntu2404` at digest `sha256:93396b43c615b051e3951adbed2f958acff7d645936caa4029a58d0c1d309abd`. Its tag/digest and provider-reported A40 allocation were verified. **Python, PyTorch, CUDA and driver versions inside the GPU container were not observed by remote code.** No GPU accuracy, timing, memory or speedup result is claimed. The existing CPU manifests retain their original zero RunPod costs because those CPU runs were separate.
 
