@@ -58,6 +58,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Validated Python 3.12 PyTorch implementation (CPU/CUDA wheel chosen at install).
+fwi2d = [
+    "torch==2.12.0",
+]
+
 # GPU acceleration (choose based on hardware)
 gpu-cuda = [
     "cupy-cuda11x>=12.0.0",  # For NVIDIA CUDA 11.x
@@ -186,8 +191,8 @@ Documentation = "https://github.com/izzatum/SimpleFWI/blob/main/README.md"
 Repository = "https://github.com/izzatum/SimpleFWI"
 Issues = "https://github.com/izzatum/SimpleFWI/issues"
 
-[tool.setuptools]
-packages = ["simplefwi"]
+[tool.setuptools.packages.find]
+include = ["simplefwi", "simplefwi.*"]
 
 [tool.setuptools.package-data]
 simplefwi = ["py.typed"]
