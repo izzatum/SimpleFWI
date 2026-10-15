@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "task_id": "fwi-redesign-task-13",
+  "recorded_at_utc": "2026-10-15T14:27:35.894576+00:00",
+  "status": "blocked",
+  "gpu_validation": "unrun",
+  "gpu_workloads_executed": 0,
+  "provider_resource_mutations": [],
+  "task_created_resource_ids": [],
+  "environment_configuration": {
+    "credential_destinations_saved": [
+      "api.runpod.io",
+      "rest.runpod.io"
+    ],
+    "runtime_authentication_verified": false,
+    "publication": "pending_user_ui_confirmation",
+    "publication_tool_available": false
+  },
+  "observations": [
+    {
+      "phase": "initial",
+      "host": "rest.runpod.io",
+      "method": "GET",
+      "path": "/v1/pods",
+      "http_status": 200,
+      "visible_pod_count": 0
+    },
+    {
+      "phase": "latest_retest",
+      "host": "rest.runpod.io",
+      "method": "GET",
+      "path": "/v1/pods",
+      "http_status": 403,
+      "sanitized_error": "error code: 1010"
+    },
+    {
+      "phase": "latest_retest",
+      "host": "rest.runpod.io",
+      "method": "GET",
+      "path": "/v1/billing/pods",
+      "http_status": 403,
+      "sanitized_error": "error code: 1010"
+    },
+    {
+      "phase": "inventory_preflight",
+      "host": "rest.runpod.io",
+      "method": "GET",
+      "paths": [
+        "/v1/networkvolumes",
+        "/v1/endpoints",
+        "/v1/billing/networkvolumes",
+        "/v1/billing/endpoints"
+      ],
+      "http_status": 403
+    },
+    {
+      "phase": "latest_retest",
+      "host": "api.runpod.io",
+      "method": "POST",
+      "path": "/graphql",
+      "operation_type": "query",
+      "requested_facts": [
+        "credit",
+        "current_hourly_spend",
+        "spend_limit",
+        "pods",
+        "gpu_prices"
+      ],
+      "http_status": 401,
+      "auth_mechanisms_tried": [
+        "bearer",
+        "documented_api_key_query"
+      ]
+    },
+    {
+      "phase": "latest_retest",
+      "host": "api.runpod.io",
+      "method": "GET",
+      "path": "/v2/catalog/gpus",
+      "http_status": 401,
+      "interpretation": "runtime request rejected; does not establish that real provider credential expired"
+    }
+  ],
+  "budget": {
+    "currency": "USD",
+    "total_ceiling": 10.0,
+    "minimum_shutdown_storage_metering_reserve": 2.0,
+    "maximum_compute_allowance_before_prior_cost": 8.0,
+    "known_new_resource_allocation_cost": 0.0,
+    "prior_task_cost": null,
+    "final_task_cost": null,
+    "available_credit": null,
+    "account_hourly_rate": null,
+    "selected_gpu_hourly_rate": null,
+    "storage_hourly_rate": null,
+    "launch_envelope_verified": false
+  },
+  "shutdown": {
+    "documented_stop_route": "POST https://rest.runpod.io/v1/pods/{podId}/stop",
+    "documented_delete_route": "DELETE https://rest.runpod.io/v1/pods/{podId}",
+    "permission_verified": false,
+    "provider_enforced_deadline_verified": false,
+    "task_created_resources_requiring_cleanup": false
+  },
+  "blockers": [
+    "working authenticated account/pricing/billing and complete resource inventory unavailable",
+    "historical task expenditure and all-resource rate cannot be bounded or attributed",
+    "environment publication has not been confirmed through available tooling",
+    "CPU gates and exact experiment envelope require the root task validation record before any launch"
+  ],
+  "performance": null,
+  "claims": [
+    "no GPU performance or speedup measured",
+    "no task-created billable resources",
+    "no proof that current total account or historical task spend is zero"
+  ]
+}
