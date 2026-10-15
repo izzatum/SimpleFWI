@@ -1,189 +1,114 @@
 # SimpleFWI
 
-<p align="center">
-  <img src="asset/SimpleFWI_logo.png" alt="SimpleFWI Logo" width="400"/>
-</p>
+SimpleFWI provides two-dimensional, constant-density acoustic frequency-domain
+full waveform inversion through PyTorch. The `simplefwi.fwi2d` API combines
+explicit SI geometry, complex Helmholtz solves, implicit adjoint gradients,
+native optimizers, and operator-based curvature. Start with the CPU sparse-direct
+reference solver and a small synthetic experiment before increasing resolution.
 
-**Performance-grade frequency-domain Full Waveform Inversion (FWI)**
+Models use metres and metres/second, with arrays ordered **[z, x]** and an explicit
+first-node origin. Data use **[frequency, source, receiver]**; frequencies are
+positive Hz. Default precision is float64 for real parameters and complex128 for
+wavefields, with Fourier convention `exp(-i omega t)`.
 
-SimpleFWI is a high-performance Python package for frequency-domain Full Waveform Inversion of seismic data. Built on PyLops for matrix-free operators, it supports multiple backends (NumPy, CuPy, JAX) for CPU and GPU acceleration.
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-
-## 🎯 Primary Objective
-
-**Ultra-fast computation with C-level performance** (50-100× speedup) + **optimal memory efficiency** for large-scale problems (N > 1e7 parameters).
-
-## ✨ Features
-
-- **Frequency-domain FWI**: Solves Helmholtz equation for acoustic wave propagation
-- **Matrix-free operators**: Memory-efficient via PyLops `LinearOperator`
-- **Backend-agnostic**: Automatic support for NumPy (CPU), CuPy (CUDA), JAX (Metal/CUDA)
-- **Adjoint-state gradients**: Efficient gradient computation using imaging condition
-- **Iterative optimization**: Barzilai-Borwein, Conjugate Gradient
-- **Apple Silicon support**: Native Metal GPU acceleration via JAX
-- **SOLID architecture**: Clean abstractions for extensibility
-
-## 🚀 Quick Start
-
-### Installation
-
-**For Apple Silicon (M1/M2/M3)**:
-```bash
-git clone https://github.com/izzatum/SimpleFWI.git
-cd SimpleFWI
-conda create -n simplefwi python=3.10
-conda activate simplefwi
-pip install -e ".[complete-metal]"
+```mermaid
+flowchart LR
+    G[Grid2D + Acquisition] --> A[AcousticFWI: Helmholtz + PML]
+    V[VelocityParameters] --> A
+    A --> D[Predicted data + FWIObjective]
+    D --> B[Implicit adjoint gradient]
+    B --> O[InversionRunner + torch.optim]
+    O --> V
+    D --> H[Curvature: Hessian actions]
 ```
 
-**For NVIDIA GPU (CUDA)**:
+The optimizer receives the physical gradient through the bounded velocity
+parameterization. Source batches are processed sequentially; increasing survey
+size still increases stored data and can increase native optimizer state.
+
+Use **Python 3.12** and released **PyTorch 2.12.0**. From a checkout, install the
+CPU wheel first, then the resolved dependencies and editable package:
+
 ```bash
-pip install -e ".[complete-cuda]"
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install torch==2.12.0 --index-url https://download.pytorch.org/whl/cpu
+python -m pip install -r requirements/fwi2d-py312.lock
+python -m pip install --no-deps -e '.[fwi2d]'
 ```
 
-**CPU only**:
-```bash
-pip install -e ".[complete]"
-```
+For NVIDIA GPUs, first install the **2.12.0** CUDA wheel selected by the
+[official PyTorch installer](https://pytorch.org/get-started/locally/) for your
+driver; then run the last two installation commands. Request
+`SolverConfig(method='fgmres', device='cuda')` explicitly and move input tensors
+to that device. CUDA execution remains unvalidated in this release; installation
+does not establish numerical compatibility. See the
+[device and optimizer matrix](guides/optimizers.md).
 
-### Basic Usage
+This small Camembert smoke example creates a circular velocity inclusion,
+simulates two sources, and accepts one native Adam step. It uses same-grid
+synthetic data to check integration; it does not establish reconstruction accuracy.
+Run it in a fresh working directory:
 
 ```python
-import numpy as np
-from simplefwi import ForwardSolver, DataMisfit, BBiter
+import json
+import math
+import torch
+from simplefwi.fwi2d import (
+    AcousticFWI, Acquisition, BoundaryConfig, Grid2D,
+    InversionRunner, SolverConfig, VelocityParameters,
+)
 
-# Define model
-model = {
-    'h': [10.0, 10.0],          # Grid spacing [dz, dx] in meters
-    'n': [100, 100],            # Grid dimensions [nz, nx]
-    'f': [2.0, 3.0, 4.0],       # Frequencies in Hz
-    'xs': [500],                # Source x-coordinates
-    'zs': [10],                 # Source z-coordinates
-    'xr': np.arange(0, 1000, 20),  # Receiver x-coordinates
-    'zr': 10*np.ones(50),       # Receiver z-coordinates
-    'q': np.eye(1),             # Source wavelet matrix
-}
-
-# Create slowness-squared model (m = 1/v²)
-m_true = (1/2.0)**2 * np.ones((10000, 1))  # True model
-m0 = (1/2.5)**2 * np.ones((10000, 1))      # Initial guess
-
-# Generate synthetic data
-Fm = ForwardSolver(model)
-Dobs, J = Fm.solve(m_true)
-
-# Run inversion
-misfit = DataMisfit(Dobs, model)
-history, m_inv, g = BBiter(misfit, m0, tol=1e-3, maxit=10)
-
-# Visualize result
-v_inv = 1.0 / np.sqrt(m_inv.reshape(100, 100))
+grid = Grid2D((17, 21), (25., 25.), origin_m=(0., 0.))
+boundary = BoundaryConfig(top='pml', pml_cells=5)
+acquisition = Acquisition(
+    sources_m=((50., 100.), (50., 400.)),
+    receivers_m=((75., 100.), (75., 250.), (75., 400.)),
+)
+z = torch.arange(grid.shape[0], dtype=torch.float64) * grid.spacing_m[0]
+x = torch.arange(grid.shape[1], dtype=torch.float64) * grid.spacing_m[1]
+inside = (z[:, None] - 200.)**2 + (x[None, :] - 250.)**2 <= 75.**2
+initial = torch.full(grid.shape, 1500., dtype=torch.float64)
+truth = torch.where(inside, 1650., initial)
+fwi = AcousticFWI(grid, acquisition, boundary, SolverConfig())
+observed = fwi.simulate(truth, (2.,), source_batch_size=1)
+objective = fwi.objective(observed, (2.,))
+model = VelocityParameters(initial, (1400., 1800.))
+before = model.velocity().detach().clone()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+runner = InversionRunner(objective, model, optimizer, source_batch_size=1)
+step = runner.step()
+torch.save({'velocity': model.velocity().detach(), 'data': observed}, 'quickstart.pt')
+print(json.dumps({
+    'accepted_steps': runner.accepted_steps, 'loss': step.loss,
+    'data_shape': list(observed.shape),
+    'finite_data': bool(torch.isfinite(observed).all()),
+    'finite_loss': math.isfinite(step.loss),
+    'closure_evaluations': step.closure_evaluations,
+    'model_changed': not torch.equal(before, model.velocity().detach()),
+}))
 ```
 
-## 📦 Package Structure
+![Physical node grid with sources, receivers, circular inclusion, surrounding PML, and an optional pressure-release top boundary](asset/fwi-workflow-domain.svg)
 
-```
-SimpleFWI/
-├── simplefwi/              # Main package
-│   ├── __init__.py         # Package exports
-│   ├── core.py             # Forward modeling & Jacobian
-│   ├── misfit.py           # Objective functions
-│   └── optimization.py     # Optimizers (BB, CG)
-├── tests/                  # Test suite
-│   ├── unit/               # Unit tests
-│   ├── integration/        # Integration tests
-│   └── validation/         # Mathematical correctness tests
-├── data/                   # Example datasets
-├── Example_*.ipynb         # Tutorial notebooks
-└── pyproject.toml          # Package configuration
-```
+The illustration uses the example's grid and acquisition. Its right panel changes
+only `top='free_surface'`: pressure is zero along the physical top, with no top
+padding. Side and bottom PML remain. The five-cell padding is illustrative;
+accuracy studies must validate PML thickness, spacing, and frequency together.
 
-## 🧪 Running Tests
+See the [implementation status](guides/implementation-status.md). Continue with the [quickstart](guides/quickstart.md),
+[architecture and source units](guides/architecture.md),
+[matrix-free Hessians and uncertainty](guides/uncertainty.md), and
+[accepted-state output and restart](guides/outputs.md).
+[Accuracy guidance](guides/accuracy.md) distinguishes screening from physical
+validation. CPU tests cover solver residuals, derivatives, optimizer integration,
+and restart. Local iterative timings were worse than direct solves, and some
+high-frequency cases failed convergence; no GPU speedup is established.
 
-```bash
-# Run all tests
-pytest tests/ -v
-
-# Run with coverage
-pytest --cov=simplefwi --cov-report=html
-
-# Run only fast tests (skip slow benchmarks)
-pytest tests/ -m "not slow"
-
-# Run GPU tests (if available)
-pytest tests/ -m gpu
-```
-
-## 📚 Examples
-
-1. **Example_modelling.ipynb**: Forward modeling basics
-2. **Example_1.ipynb**: Circular reflector (Green's function reciprocity)
-3. **Example_2.ipynb**: Basic inversion with BB and CG
-4. **Example_3.ipynb**: Marmousi model (realistic benchmark)
-
-## 🛠️ Development Status
-
-**Current**: v0.1.0 - Research-quality implementation
-
-**Roadmap** (see `.github/copilot-instructions.md`):
-- **Phase 1**: GPU acceleration (10-50× speedup) ⏳
-- **Phase 2**: JIT compilation (2-5× speedup) ⏳
-- **Phase 3**: Iterative solvers for N > 1e6 ⏳
-- **Phase 4**: Parallel processing (2-4× speedup) ⏳
-- **Phase 5**: Matrix-free implementations ⏳
-- **Phase 6**: SOLID refactoring ⏳
-- **Phase 7**: Hessian operators (Gauss-Newton, Full) ⏳
-- **Phase 8**: Advanced optimizers (ADAM, L-BFGS, Newton-CG) ⏳
-- **Phase 9**: Enhanced absorbing boundaries (sponge, Rayleigh) ⏳
-- **Phase 10**: Complete documentation & CI/CD ⏳
-
-## 🤝 Contributing
-
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
-- Development setup
-- SOLID principles & performance guidelines
-- Testing requirements
-- Code style & documentation standards
-
-## 📖 Documentation
-
-- **API Reference**: NumPy-style docstrings in source code
-- **Examples**: Jupyter notebooks in repository root
-
-## 🔧 Dependencies
-
-**Core**:
-- NumPy ≥ 1.24.0
-- SciPy ≥ 1.10.0
-- PyLops ≥ 2.3.0
-- Matplotlib ≥ 3.7.0
-
-**GPU Acceleration** (optional):
-- CuPy ≥ 12.0.0 (NVIDIA CUDA)
-- JAX[metal] ≥ 0.4.20 (Apple Silicon)
-
-**Performance** (optional):
-- Numba ≥ 0.58.0
-- Cython ≥ 3.0.0
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Built on [PyLops](https://pylops.readthedocs.io/) for matrix-free operators
-- Backend abstraction pattern follows PyLops conventions
-- Inspired by frequency-domain FWI research community
-
-## 📧 Contact
-
-- **Author**: Muhammad Izzatullah
-- **GitHub**: [@izzatum](https://github.com/izzatum)
-- **Issues**: [GitHub Issues](https://github.com/izzatum/SimpleFWI/issues)
-
----
-
-**Note**: SimpleFWI is under active development. The API may change as we implement the performance-focused roadmap.
+Run `python -m pytest tests/fwi2d -q` for the new implementation.
+[Validation evidence and limitations](guides/validation.md) include unrun CUDA
+checks and pre-existing legacy full-collection failures. Existing legacy entry
+points remain available; use the [migration guide](guides/migration.md).
+SimpleFWI is [MIT licensed](LICENSE). Attribute the
+[project and contributors](https://github.com/izzatum/SimpleFWI); no associated
+publication is claimed here.

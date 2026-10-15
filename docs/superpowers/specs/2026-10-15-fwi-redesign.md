@@ -1,6 +1,6 @@
 # SimpleFWI 2D PyTorch redesign specification
 
-Date: 2026-10-15. Status: consolidated design for review; implementation has not started.
+Date: 2026-10-15. Status: implemented and verified on CPU with documented limits; CUDA validation and high-frequency scaling remain incomplete. See [implementation status](../../../guides/implementation-status.md).
 
 ## Purpose and agreed scope
 
@@ -10,7 +10,7 @@ The user prioritizes correctness, then measured performance at equal accuracy. T
 
 The implementation budget and duration are distinct from the RunPod budget. Total RunPod expenditure for this task must not exceed USD 10, including compute, storage and other billed resources. No GPU resources were started during planning.
 
-## Current evidence and migration baseline
+## Pre-rewrite evidence and migration baseline
 
 Inspected checkout: `izzatum/SimpleFWI`, HEAD `db5c9af426aae90879fc873c50edcaf8d1f2cdf0`.
 
@@ -33,7 +33,7 @@ Create the new implementation in `simplefwi/fwi2d/`, leaving legacy APIs intact 
 - Use SI units internally, Fourier convention exp(-i omega t), array order [z, x], and explicit coordinate origins.
 - Observed/predicted data axes are [frequency, source, receiver]; batched wavefields are [source_batch, z_padded, x_padded]. Axes and units are saved with outputs.
 - Use the existing checkout. Cloud tasks are already isolated; do not create a Git worktree unless explicitly requested.
-- Planning changes documentation only. Implementation, dependency installation, and paid GPU experiments are subsequent work.
+- The original planning phase changed documentation only. The user subsequently authorized implementation, dependency installation and GPU work within the USD 10 budget; paid GPU experiments remain blocked by the recorded access and cost gates.
 - Never disable assertions, silently suppress failed solves, or count skipped/unexecuted tests as passing.
 - No zero-frequency Helmholtz solves, silent coordinate clipping, silent device fallback, or silent precision downgrade.
 

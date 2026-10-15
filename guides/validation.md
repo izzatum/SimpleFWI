@@ -14,7 +14,9 @@ OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 .venv/bin/python -m pytest \
   tests/fwi2d/test_camembert.py -q -s
 ```
 
-The measured result was **27 passed in 56.32 s**, with no skips or warnings.
+The historical focused run measured **27 passed in 56.32 s**, with no skips or
+warnings. This is the count for that recorded physics run, not the current full
+`tests/fwi2d` suite.
 The thread limits avoid oversubscription during concurrent development.
 `-s` prints the scalar observations; no reference wavefields are stored.
 
@@ -141,3 +143,29 @@ from two grids alone. Same-grid data are appropriate for algebraic derivative
 checks; independent refined data are required when assessing reconstruction
 accuracy. The present tests establish reference generation, not inversion
 quality or success at every candidate frequency.
+
+## Current CPU evidence, unrun CUDA checks and legacy failures
+
+The [CPU solver manifest](../benchmarks/fwi2d/solver-cpu.json) records direct and
+FGMRES comparisons, including failed-convergence cases. Local iterative timings
+were worse than direct solves; these measurements establish no GPU speedup.
+The [full-domain Marmousi CPU manifest](../benchmarks/fwi2d/marmousi-full-cpu.json)
+records finite forward data and physical gradients at 2 Hz on the supplied
+25 m grid, including 371 nested source positions. It does not establish
+independent physical accuracy, reconstruction quality, a highest useful
+frequency, or the information gained from additional sources.
+
+Actual CUDA execution remains unrun because no CUDA hardware was available.
+The eight CUDA-required checks cover four device/precision cases, one allocation
+scaling case, and three pinned-buffer/event recording cases. CPU runs report
+these as skips; they are not passing GPU validation. The
+[RunPod protocol](../benchmarks/fwi2d/runpod_protocol.md) describes the bounded
+hardware validation procedure and records the blocked provisioning status.
+
+Use `python -m pytest tests/fwi2d -q` for the new implementation's targeted suite.
+The legacy full-repository pytest run still aborts during collection: the
+unbounded BB script performs work on import and encounters a singular
+factorization, while stale scripts import the removed `simplefwi.core_v2` module.
+Preserved legacy entry points do not make those historical tests pass. No
+whole-repository green claim is made; the measurements above retain their stated
+fixture, device and numerical scope.

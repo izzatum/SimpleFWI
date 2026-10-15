@@ -8,7 +8,27 @@
 
 **Tech Stack:** Python 3.12; released and exactly pinned PyTorch; NumPy/SciPy reference numerics; pytest; HDF5/h5py; Matplotlib for reproducible SVG diagrams. No paid resource is required to write or review this plan.
 
-**Spec:** [2026-10-15-fwi-redesign.md](../specs/2026-10-15-fwi-redesign.md). Read it before executing any task. This is a consolidated plan requested by the user; it does not claim that the implementation or numerical targets have already been verified.
+**Spec:** [2026-10-15-fwi-redesign.md](../specs/2026-10-15-fwi-redesign.md). Read it before executing any task. This records the agreed plan and its execution status. Evidence and remaining limits are summarized in [implementation status](../../../guides/implementation-status.md).
+
+## Execution status — 15 October 2026
+
+The final new-suite run completed with **367 passed and 8 CUDA tests skipped**.
+Independent final review found no unresolved verified P0/P1/P2 issue after the
+accepted-step lifecycle and restart-bounds repairs. Checkboxes below distinguish
+completed work from partially fulfilled or externally blocked steps; an unchecked
+GPU-dependent step does not mean its CPU portion is absent.
+
+| Tasks | Status |
+| --- | --- |
+| 1–8 | Implemented, tested and independently reviewed on CPU. |
+| 9 | CPU recording/restart validated; bounded CUDA transfer code implemented, actual device execution unrun. |
+| 10 | Tensor solver and CPU benchmark delivered; CUDA unrun, no measured speed crossover, harder cases failed convergence. It remains experimental. |
+| 11 | Dispersion screening and immutable estimates delivered; plans remain `screened_only`. Automatic validated stage execution/regridding is incomplete. |
+| 12 | API/CLI and examples delivered; full supplied Marmousi forward/gradient measured at 2 Hz with 371 sources. Higher-frequency physical accuracy and reconstruction remain unrun. |
+| 13 | Blocked by RunPod HTTP 401/403. No paid resources created. Protocol and sanitized evidence committed; no GPU validation claimed. |
+| 14 | Illustrated README, executable examples, guides, locked installation and wheel checks delivered. |
+
+CPU details, timing manifests and limitations: [implementation status](../../../guides/implementation-status.md).
 
 ## Global Constraints
 
@@ -71,11 +91,11 @@ Supporting files: `tests/fwi2d/` for real executable tests, `examples/fwi2d/` fo
 
 **Interfaces:** Define immutable `Grid2D(shape, spacing_m, origin_m)` (all tuples ordered z,x), `Acquisition(sources_m, receivers_m, amplitudes)` with coordinate pairs (z,x), `BoundaryConfig(top, pml_cells, sigma_max, alpha=0)`, `SolverConfig(method, rtol, atol, maxiter, restart, device, dtype, memory_budget_bytes)`, and `SolveReport`. `load_marmousi(path, *, velocity_unit) -> tuple[Grid2D, Tensor]` returns SI velocities. Define configuration hashing via serializable values, not object identity.
 
-- [ ] Write `test_marmousi_units_and_origin` asserting 25 m spacing, x origin -200 m, expected velocity ranges after explicit unit conversion, and rejection of an omitted/invalid unit. Add rectangular-grid and NaN/nonpositive-velocity validation tests.
-- [ ] Run `python -m pytest tests/fwi2d/test_contracts.py -q`; confirm failures reflect missing contracts, not unrelated imports.
-- [ ] Implement the records/loaders; resolve a stable PyTorch release compatible with Python 3.12 and the intended platform, pin all development dependencies, and record the native optimizer inventory. Configure package discovery to include `simplefwi.fwi2d` and its solver subpackage.
-- [ ] Run the tests, install from the lock in an isolated environment, build a wheel and import the new package outside the checkout. Confirm legacy imports still work.
-- [ ] Commit only the contract, packaging and test files with `feat: define SI grid and acquisition contracts`.
+- [x] Write `test_marmousi_units_and_origin` asserting 25 m spacing, x origin -200 m, expected velocity ranges after explicit unit conversion, and rejection of an omitted/invalid unit. Add rectangular-grid and NaN/nonpositive-velocity validation tests.
+- [x] Run `python -m pytest tests/fwi2d/test_contracts.py -q`; confirm failures reflect missing contracts, not unrelated imports.
+- [x] Implement the records/loaders; resolve a stable PyTorch release compatible with Python 3.12 and the intended platform, pin all development dependencies, and record the native optimizer inventory. Configure package discovery to include `simplefwi.fwi2d` and its solver subpackage.
+- [x] Run the tests, install from the lock in an isolated environment, build a wheel and import the new package outside the checkout. Confirm legacy imports still work.
+- [x] Commit only the contract, packaging and test files with `feat: define SI grid and acquisition contracts`.
 
 ## Task 2: Implement matched sparse and tensor PML operators
 
@@ -83,11 +103,11 @@ Supporting files: `tests/fwi2d/` for real executable tests, `examples/fwi2d/` fo
 
 **Interfaces:** `HelmholtzOperator(grid: Grid2D, boundary: BoundaryConfig)` provides `apply(m: Tensor, omega: float, u: Tensor, *, adjoint: bool=False) -> Tensor` and `assemble(m, omega) -> scipy.sparse.csc_matrix`. Its active computational DOF map excludes Dirichlet nodes. `SamplingOperator(grid, positions_m)` provides `sample(u)` and `scatter(values)` with exact discrete adjointness. `extend_model(m, grid, boundary)` is a differentiable nearest-boundary map into PML; source normalization is explicit cell-area scaling.
 
-- [ ] Write action-equivalence tests at <=1e-12 relative error and complex dot tests at <=1e-10. Add nonzero-origin, unequal-spacing, PML-corner, edge-cell extension derivative, free-surface-node rejection and no-coordinate-clipping tests.
-- [ ] Run `python -m pytest tests/fwi2d/test_acquisition.py tests/fwi2d/test_operator.py tests/fwi2d/test_pml_extension.py -q` and confirm the missing implementation failures.
-- [ ] Implement conservative second-order face/centre coefficients and cubic sigma in padding, ordinary PML first (alpha=0), top free-surface elimination, source/sampling operators and both operator representations using the same documented mathematical coefficients.
-- [ ] Rerun the task tests; compare against a separately written small explicit stencil fixture so two shared implementations cannot conceal the same indexing error.
-- [ ] Commit with `feat: add conservative Helmholtz operator with PML and free surface`.
+- [x] Write action-equivalence tests at <=1e-12 relative error and complex dot tests at <=1e-10. Add nonzero-origin, unequal-spacing, PML-corner, edge-cell extension derivative, free-surface-node rejection and no-coordinate-clipping tests.
+- [x] Run `python -m pytest tests/fwi2d/test_acquisition.py tests/fwi2d/test_operator.py tests/fwi2d/test_pml_extension.py -q` and confirm the missing implementation failures.
+- [x] Implement conservative second-order face/centre coefficients and cubic sigma in padding, ordinary PML first (alpha=0), top free-surface elimination, source/sampling operators and both operator representations using the same documented mathematical coefficients.
+- [x] Rerun the task tests; compare against a separately written small explicit stencil fixture so two shared implementations cannot conceal the same indexing error.
+- [x] Commit with `feat: add conservative Helmholtz operator with PML and free surface`.
 
 ## Task 3: Build CPU reference solves and bounded reusable state
 
@@ -95,11 +115,11 @@ Supporting files: `tests/fwi2d/` for real executable tests, `examples/fwi2d/` fo
 
 **Interfaces:** `LinearSolver.solve(operator, m, omega, rhs, *, adjoint=False) -> tuple[Tensor, SolveReport]`; `DirectSolver(config: SolverConfig)` implements it. `SolverFailure` includes the report. Evaluation-scoped cache keys include the values/configuration specified in the spec; cache entries have byte estimates and an explicit lifecycle.
 
-- [ ] Test forward/adjoint solves against dense `torch.linalg.solve` on tiny fixtures, <=1e-10 true relative residual, zero RHS with absolute tolerance 1e-12, repeated RHS factor reuse, bounded cache eviction, in-place model mutation and changed-frequency/PML invalidation. Assert an unconverged result raises before use.
-- [ ] Run `python -m pytest tests/fwi2d/test_direct_solver.py tests/fwi2d/test_solver_cache.py -q` and confirm intended failures.
-- [ ] Implement CPU CSC factors with batched RHS and supported conjugate-transpose solves; convert explicitly at the adapter boundary. Reject CUDA tensors on the CPU adapter rather than silently transferring them.
-- [ ] Rerun tests and record factorization count and memory for one versus multiple source batches. Verify standalone wheel use, not just checkout imports.
-- [ ] Commit with `feat: add validated reusable CPU Helmholtz solves`.
+- [x] Test forward/adjoint solves against dense `torch.linalg.solve` on tiny fixtures, <=1e-10 true relative residual, zero RHS with absolute tolerance 1e-12, repeated RHS factor reuse, bounded cache eviction, in-place model mutation and changed-frequency/PML invalidation. Assert an unconverged result raises before use.
+- [x] Run `python -m pytest tests/fwi2d/test_direct_solver.py tests/fwi2d/test_solver_cache.py -q` and confirm intended failures.
+- [x] Implement CPU CSC factors with batched RHS and supported conjugate-transpose solves; convert explicitly at the adapter boundary. Reject CUDA tensors on the CPU adapter rather than silently transferring them.
+- [x] Rerun tests and record factorization count and memory for one versus multiple source batches. Verify standalone wheel use, not just checkout imports.
+- [x] Commit with `feat: add validated reusable CPU Helmholtz solves`.
 
 ## Task 4: Implement implicit first and second derivatives
 
@@ -107,11 +127,11 @@ Supporting files: `tests/fwi2d/` for real executable tests, `examples/fwi2d/` fo
 
 **Interfaces:** `implicit_solve(m, rhs, omega, operator, solver) -> Tensor`; `Regularizer(grid, beta, prior_m).value(m) -> real scalar Tensor`; `FWIObjective(operator, acquisition, frequencies_hz, observed, weights, regularizer, solver)` provides `loss(m) -> real scalar Tensor` and `iter_data_losses(m, source_batch_size)` yielding source/frequency contributions. Define the loss sum once: the regularizer is added exactly once after batch accumulation.
 
-- [ ] Write PyTorch `gradcheck` and `gradgradcheck` against tiny dense differentiable solves. Test complex RHS gradients, physical-boundary/PML extension derivatives, combined vs separate regularization gradients, and equivalence of batched/unbatched objective and gradients.
-- [ ] Run `python -m pytest tests/fwi2d/test_implicit_autograd.py tests/fwi2d/test_regularization.py tests/fwi2d/test_objective.py -q`; confirm missing functionality fails.
-- [ ] Implement implicit adjoint backward and differentiable backward recomputation for second derivatives. Do not differentiate through Krylov iterations or detach required higher-order dependencies. Implement correct half-factor spatial regularization and weighted residuals.
-- [ ] Rerun tests, require gradcheck/gradgradcheck PASS, and perform epsilon-sweep Taylor checks with slopes 1.8–2.2 over at least three usable points. Test a nonzero residual and a nonlinear model perturbation, not only a perfect fit.
-- [ ] Commit with `feat: support verified implicit Helmholtz autodiff and objective`.
+- [x] Write PyTorch `gradcheck` and `gradgradcheck` against tiny dense differentiable solves. Test complex RHS gradients, physical-boundary/PML extension derivatives, combined vs separate regularization gradients, and equivalence of batched/unbatched objective and gradients.
+- [x] Run `python -m pytest tests/fwi2d/test_implicit_autograd.py tests/fwi2d/test_regularization.py tests/fwi2d/test_objective.py -q`; confirm missing functionality fails.
+- [x] Implement implicit adjoint backward and differentiable backward recomputation for second derivatives. Do not differentiate through Krylov iterations or detach required higher-order dependencies. Implement correct half-factor spatial regularization and weighted residuals.
+- [x] Rerun tests, require gradcheck/gradgradcheck PASS, and perform epsilon-sweep Taylor checks with slopes 1.8–2.2 over at least three usable points. Test a nonzero residual and a nonlinear model perturbation, not only a perfect fit.
+- [x] Commit with `feat: support verified implicit Helmholtz autodiff and objective`.
 
 ## Task 5: Establish independent Camembert physics fixtures
 
@@ -119,11 +139,11 @@ Supporting files: `tests/fwi2d/` for real executable tests, `examples/fwi2d/` fo
 
 **Interfaces:** `make_camembert(config_path) -> tuple[Grid2D, Tensor, Tensor, Acquisition, BoundaryConfig]` returns true/initial velocity and a fixed acquisition. Pin the spec's 48 by 48 grid, circular inclusion and candidate frequencies. Use surrounding acquisition on the perimeter of the interior square [40,430] m with eight sources and 32 distinct receivers; save exact coordinate arrays. Add a separate surface-acquisition fixture with sources at z=40 m and receivers at z=60 m.
 
-- [ ] Write smooth manufactured-solution refinement tests, homogeneous field/source normalization tests excluding the source neighborhood, pressure-free-surface reflection-sign tests, and PML reflection sweeps with <=1e-3 amplitude at 0/30/60 degrees on calibrated fixtures. Include low-frequency and corner cases.
-- [ ] Run `python -m pytest tests/fwi2d/test_physics.py tests/fwi2d/test_pml_reflection.py tests/fwi2d/test_camembert.py -q`; verify failures expose absent evidence or incorrect physics.
-- [ ] Implement fixture generation and independent references: analytical homogeneous Green's functions and a larger/finer computational reference for Camembert. Keep circle geometry fixed physically under refinement. Classify same-grid derivative data separately from independent reconstruction data.
-- [ ] Rerun tests, store small scalar convergence/reflection summaries and reproducible commands in `guides/validation.md`. If a candidate frequency fails dispersion, label it algebraic-only until task 11 provides a physically acceptable configuration; do not claim a physics pass.
-- [ ] Commit with `test: establish independent Camembert and PML validation`.
+- [x] Write smooth manufactured-solution refinement tests, homogeneous field/source normalization tests excluding the source neighborhood, pressure-free-surface reflection-sign tests, and PML reflection sweeps with <=1e-3 amplitude at 0/30/60 degrees on calibrated fixtures. Include low-frequency and corner cases.
+- [x] Run `python -m pytest tests/fwi2d/test_physics.py tests/fwi2d/test_pml_reflection.py tests/fwi2d/test_camembert.py -q`; verify failures expose absent evidence or incorrect physics.
+- [x] Implement fixture generation and independent references: analytical homogeneous Green's functions and a larger/finer computational reference for Camembert. Keep circle geometry fixed physically under refinement. Classify same-grid derivative data separately from independent reconstruction data.
+- [x] Rerun tests, store small scalar convergence/reflection summaries and reproducible commands in `guides/validation.md`. If a candidate frequency fails dispersion, label it algebraic-only until task 11 provides a physically acceptable configuration; do not claim a physics pass.
+- [x] Commit with `test: establish independent Camembert and PML validation`.
 
 ## Task 6: Integrate all native optimizer families and the accepted-step lifecycle
 
@@ -131,12 +151,12 @@ Supporting files: `tests/fwi2d/` for real executable tests, `examples/fwi2d/` fo
 
 **Interfaces:** `VelocityParameters(initial_velocity, bounds, active_mask, *, representation="dense")` is an `nn.Module` with `velocity()`, `slowness_squared()` and native `parameters()`. Dense parameters are 2D; `representation="sparse_embedding"` uses sparse-gradient embeddings. `OptimizerRecipe` records class, valid construction arguments, representation and constraints. `InversionRunner(objective, model, optimizer, *, source_batch_size, scheduler=None, recorder=None)` provides `step() -> StepResult` and `run(steps) -> InversionResult`; StepResult distinguishes accepted outer steps from closure evaluations.
 
-- [ ] Write a discovered-inventory test requiring an executable recipe for each stable native optimizer class in the pinned release, including SparseAdam and any shape-constrained methods. Assert finite parameter/state values after one valid step, physical bounds, unchanged frozen cells and exact physical-objective equivalence between dense/embedding representations. Explicitly reject incompatible direct optimizer/parameter combinations.
-- [ ] Add closure tests: repeated calls at fixed parameters agree, gradients do not accumulate accidentally, LBFGS trial points invalidate caches, batch backward matches full loss, and only accepted states emit recording/scheduler events. Test failed solve propagation without a claimed successful step.
-- [ ] Run `python -m pytest tests/fwi2d/test_parameters.py tests/fwi2d/test_optimizer_inventory.py tests/fwi2d/test_closure.py tests/fwi2d/test_inversion.py -q` and confirm the expected failures.
-- [ ] Implement native parameter mappings/recipes and the runner. Stream first-order batch backward; do not hold all batch graphs. Keep closure source/frequency sets deterministic. Identify the actual final accepted parameters before recording their loss/state, including cases where the optimizer returns a pre-step loss.
-- [ ] Rerun tests; run small Adam and LBFGS Camembert inversions showing objective reduction without asserting per-step monotonicity for Adam. Document tested native flags and unsupported combinations without claiming all flags work on every device.
-- [ ] Commit with `feat: integrate native PyTorch optimizers with deterministic FWI closures`.
+- [x] Write a discovered-inventory test requiring an executable recipe for each stable native optimizer class in the pinned release, including SparseAdam and any shape-constrained methods. Assert finite parameter/state values after one valid step, physical bounds, unchanged frozen cells and exact physical-objective equivalence between dense/embedding representations. Explicitly reject incompatible direct optimizer/parameter combinations.
+- [x] Add closure tests: repeated calls at fixed parameters agree, gradients do not accumulate accidentally, LBFGS trial points invalidate caches, batch backward matches full loss, and only accepted states emit recording/scheduler events. Test failed solve propagation without a claimed successful step.
+- [x] Run `python -m pytest tests/fwi2d/test_parameters.py tests/fwi2d/test_optimizer_inventory.py tests/fwi2d/test_closure.py tests/fwi2d/test_inversion.py -q` and confirm the expected failures.
+- [x] Implement native parameter mappings/recipes and the runner. Stream first-order batch backward; do not hold all batch graphs. Keep closure source/frequency sets deterministic. Identify the actual final accepted parameters before recording their loss/state, including cases where the optimizer returns a pre-step loss.
+- [x] Rerun tests; run small Adam and LBFGS Camembert inversions showing objective reduction without asserting per-step monotonicity for Adam. Document tested native flags and unsupported combinations without claiming all flags work on every device.
+- [x] Commit with `feat: integrate native PyTorch optimizers with deterministic FWI closures`.
 
 ## Task 7: Provide physical and transformed Hessian operators
 
@@ -144,12 +164,12 @@ Supporting files: `tests/fwi2d/` for real executable tests, `examples/fwi2d/` fo
 
 **Interfaces:** `Curvature(objective, m, *, active_mask=None)` freezes the reference model and provides `jvp(v)`, `vjp(data_vector)`, `data_gn_hvp(v)`, `gn_hvp(v)`, `exact_hvp(v)` in physical m coordinates. Model vectors have shape [n_active] with explicit injection/restriction; the default mask selects all physical cells. `data_gn_hvp` excludes regularization, while `gn_hvp` and `exact_hvp` include it. `TransformedCurvature(objective, model)` exposes separately labeled theta-coordinate actions including exact transformation second derivatives. `explicit_matrix(action, n, *, max_bytes)` is diagnostics-only and refuses allocations above the provided budget.
 
-- [ ] Write tests comparing JVPs with data finite differences, GN with an explicit weighted Jacobian (<=1e-8 relative error), exact HVP with gradient central differences (<=1e-5), and real Hessian symmetry (<=1e-8). Check equality of data GN/exact Hessian at zero residual and the expected nonzero residual curvature difference.
-- [ ] Test nonlinear theta transformation against `torch.autograd.functional.hessian` on a tiny dense reference, including its second derivative term; test physical HVPs for the sparse parameterization independently of sparse native double-backward support.
-- [ ] Run `python -m pytest tests/fwi2d/test_jacobian.py tests/fwi2d/test_hessian.py tests/fwi2d/test_hessian_coordinates.py -q` and confirm intended failures.
-- [ ] Implement operator actions with incremental forward/adjoint solves and explicit memory policy. Recompute/checkpoint source state rather than allocating J or H by default. Add the 16 by 16/24 by 24 active-window Camembert experiment.
-- [ ] Rerun tests and `python examples/fwi2d/camembert_hessian.py --fixture tests/fwi2d/fixtures/camembert.json`; record all error metrics, coordinates, residual level and solve tolerances.
-- [ ] Commit with `feat: add verified Gauss-Newton and exact Hessian actions`.
+- [x] Write tests comparing JVPs with data finite differences, GN with an explicit weighted Jacobian (<=1e-8 relative error), exact HVP with gradient central differences (<=1e-5), and real Hessian symmetry (<=1e-8). Check equality of data GN/exact Hessian at zero residual and the expected nonzero residual curvature difference.
+- [x] Test nonlinear theta transformation against `torch.autograd.functional.hessian` on a tiny dense reference, including its second derivative term; test physical HVPs for the sparse parameterization independently of sparse native double-backward support.
+- [x] Run `python -m pytest tests/fwi2d/test_jacobian.py tests/fwi2d/test_hessian.py tests/fwi2d/test_hessian_coordinates.py -q` and confirm intended failures.
+- [x] Implement operator actions with incremental forward/adjoint solves and explicit memory policy. Recompute/checkpoint source state rather than allocating J or H by default. Add the 16 by 16/24 by 24 active-window Camembert experiment.
+- [x] Rerun tests and `python examples/fwi2d/camembert_hessian.py --fixture tests/fwi2d/fixtures/camembert.json`; record all error metrics, coordinates, residual level and solve tolerances.
+- [x] Commit with `feat: add verified Gauss-Newton and exact Hessian actions`.
 
 ## Task 8: Implement local uncertainty with explicit statistical assumptions
 
@@ -157,11 +177,11 @@ Supporting files: `tests/fwi2d/` for real executable tests, `examples/fwi2d/` fo
 
 **Interfaces:** `LocalGaussian(curvature, prior_precision, *, solve_config)` builds precision from `curvature.data_gn_hvp` plus the supplied prior exactly once, and provides `covariance_action(v)`, `diagonal_estimate(probes, seed) -> Estimate` (mean and sampling-error metadata), and `leading_modes(rank, seed)`. Inputs and results name physical parameter coordinates and noise whitening. Require a positive prior diagonal for the initial fixture in addition to optional smoothing.
 
-- [ ] Write small explicit-reference tests for inverse actions (<=1e-8 relative error on well-conditioned fixtures), seeded diagonal estimates with documented Monte Carlo error, and increasing-rank approximation checks. Assert singular/improper precision and an indefinite exact Hessian are rejected as covariance models. Test that inverse diagonal differs from reciprocal precision diagonal on a coupled fixture and that the prior is not double-counted when the inversion objective already has regularization.
-- [ ] Run `python -m pytest tests/fwi2d/test_uncertainty.py -q` and confirm intended failures.
-- [ ] Implement iterative SPD inverse actions and seeded stochastic/Lanczos estimators, reporting inner-solve errors separately from sampling/truncation errors. No silent damping or pseudoinverse masquerading as a proper posterior.
-- [ ] Rerun tests and the Camembert example; compare with explicit small covariance and document the local Gaussian approximation's limits.
-- [ ] Commit with `feat: add reference-validated local uncertainty operators`.
+- [x] Write small explicit-reference tests for inverse actions (<=1e-8 relative error on well-conditioned fixtures), seeded diagonal estimates with documented Monte Carlo error, and increasing-rank approximation checks. Assert singular/improper precision and an indefinite exact Hessian are rejected as covariance models. Test that inverse diagonal differs from reciprocal precision diagonal on a coupled fixture and that the prior is not double-counted when the inversion objective already has regularization.
+- [x] Run `python -m pytest tests/fwi2d/test_uncertainty.py -q` and confirm intended failures.
+- [x] Implement iterative SPD inverse actions and seeded stochastic/Lanczos estimators, reporting inner-solve errors separately from sampling/truncation errors. No silent damping or pseudoinverse masquerading as a proper posterior.
+- [x] Rerun tests and the Camembert example; compare with explicit small covariance and document the local Gaussian approximation's limits.
+- [x] Commit with `feat: add reference-validated local uncertainty operators`.
 
 ## Task 9: Add bounded recording and trustworthy restart
 
@@ -169,12 +189,12 @@ Supporting files: `tests/fwi2d/` for real executable tests, `examples/fwi2d/` fo
 
 **Interfaces:** `RecordingPolicy` specifies output path, selected fields/frequencies/sources, cadence, chunk byte limit, queue capacity (default two), and compression. `Recorder.record_accepted(step_result, payload)` accepts detached arrays and `close()` flushes or raises. `save_checkpoint(path, state)` and `load_checkpoint(path, expected_config)` include model/optimizer/scheduler/RNG and metadata. Payload names distinguish physical/PML wavefields and physical/parameter-coordinate gradients.
 
-- [ ] Write round-trip and interrupted-write tests; inject writer errors and slow writers, assert a two-chunk/byte-bounded queue, backpressure, and no retained autograd graphs. Assert rejected closure evaluations never persist as accepted snapshots and partial writes cannot overwrite the last complete checkpoint.
-- [ ] Test restart equivalence on a deterministic small optimizer run, mismatched parameterization/optimizer/config rejection, source-batch selections and complete axis/unit metadata.
-- [ ] Run `python -m pytest tests/fwi2d/test_recording.py tests/fwi2d/test_restart.py -q` and confirm intended failures.
-- [ ] Implement one HDF5-owning writer, reusable buffers, atomic checkpoint/manifest publication, propagated errors and explicit lifecycle cleanup. Add GPU pinned buffers/events when task 10 provides CUDA execution. Default wavefields/gradients off; keep diagnostic records small.
+- [x] Write round-trip and interrupted-write tests; inject writer errors and slow writers, assert a two-chunk/byte-bounded queue, backpressure, and no retained autograd graphs. Assert rejected closure evaluations never persist as accepted snapshots and partial writes cannot overwrite the last complete checkpoint.
+- [x] Test restart equivalence on a deterministic small optimizer run, mismatched parameterization/optimizer/config rejection, source-batch selections and complete axis/unit metadata.
+- [x] Run `python -m pytest tests/fwi2d/test_recording.py tests/fwi2d/test_restart.py -q` and confirm intended failures.
+- [x] Implement one HDF5-owning writer, reusable buffers, atomic checkpoint/manifest publication, propagated errors and explicit lifecycle cleanup. Add GPU pinned buffers/events when task 10 provides CUDA execution. Default wavefields/gradients off; keep diagnostic records small.
 - [ ] Rerun tests and benchmark recording off/on with bounded source batches. Report I/O cost and host/device peak memory without a zero-overhead claim.
-- [ ] Commit with `feat: add bounded scientific output recording and restart`.
+- [x] Commit with `feat: add bounded scientific output recording and restart`.
 
 ## Task 10: Implement and validate the PyTorch production solver
 
@@ -182,12 +202,12 @@ Supporting files: `tests/fwi2d/` for real executable tests, `examples/fwi2d/` fo
 
 **Interfaces:** `FGMRESSolver(config, preconditioner)` implements the task 3 solve interface. `ShiftedHelmholtzMultigrid(operator, config).apply(m, omega, rhs, *, adjoint=False)` provides a bounded preconditioner; its shift and level policies are explicit configuration/benchmark output, not hidden defaults. Support tensor CPU execution first, then CUDA without changing the physical operator.
 
-- [ ] Write CPU tensor tests against DirectSolver, explicit nonconvergence tests, adjoint solve checks, compatible coarse-grid boundary tests, and restarted basis-memory bounds. Add CUDA-marked tests for complex128/complex64 thresholds from the spec; absent hardware is reported as unrun, never validated.
-- [ ] Run `python -m pytest tests/fwi2d/test_krylov.py tests/fwi2d/test_multigrid.py -q` to establish the failing baseline.
-- [ ] Implement restarted FGMRES with true-residual verification and shifted-operator multigrid; profile tensor allocations before adding custom kernels. Test preconditioner choices on increasing frequency/contrast and stop claiming scalability if iterations grow beyond the declared budget.
+- [x] Write CPU tensor tests against DirectSolver, explicit nonconvergence tests, adjoint solve checks, compatible coarse-grid boundary tests, and restarted basis-memory bounds. Add CUDA-marked tests for complex128/complex64 thresholds from the spec; absent hardware is reported as unrun, never validated.
+- [x] Run `python -m pytest tests/fwi2d/test_krylov.py tests/fwi2d/test_multigrid.py -q` to establish the failing baseline.
+- [x] Implement restarted FGMRES with true-residual verification and shifted-operator multigrid; profile tensor allocations before adding custom kernels. Test preconditioner choices on increasing frequency/contrast and stop claiming scalability if iterations grow beyond the declared budget.
 - [ ] Rerun CPU tests plus task 4/7 derivatives through the new solver. When authorized bounded GPU runtime is available under task 13, execute device/precision/memory tests, verify cached data stay on the selected device, and test recording transfers from task 9.
 - [ ] Benchmark setup plus all RHS, forward/gradient/HVP wall time, residuals and memory against direct solves. Report the crossover and unresolved cases; do not automatically favor GPU.
-- [ ] Commit with `feat: add accuracy-checked PyTorch matrix-free Helmholtz solver`.
+- [x] Commit with `feat: add accuracy-checked PyTorch matrix-free Helmholtz solver`.
 
 ## Task 11: Add dispersion screening and fixed-stage resource planning
 
@@ -195,11 +215,11 @@ Supporting files: `tests/fwi2d/` for real executable tests, `examples/fwi2d/` fo
 
 **Interfaces:** `assess_dispersion(grid, velocity_bounds, frequencies_hz, stencil) -> DispersionReport`; `plan_stage(request, *, memory_budget_bytes) -> StagePlan` returns a fixed grid, stencil, frequency set, source batching, precision and PML configuration plus estimates and validation status. Implement the validated second-order stencil first; an additional optimized/high-order stencil must pass task 2/5/7 checks before registration.
 
-- [ ] Write analytic-symbol angular tests with <=1% phase-wavenumber error target, rectangular grids, minimum allowed velocity rather than only current velocity, and explicit failure when no configuration meets the accuracy/memory request. Verify zero frequency rejection and stage immutability during optimizer steps.
-- [ ] Run `python -m pytest tests/fwi2d/test_dispersion.py tests/fwi2d/test_stage_plan.py -q` and confirm intended failures.
+- [x] Write analytic-symbol angular tests with <=1% phase-wavenumber error target, rectangular grids, minimum allowed velocity rather than only current velocity, and explicit failure when no configuration meets the accuracy/memory request. Verify zero frequency rejection and stage immutability during optimizer steps.
+- [x] Run `python -m pytest tests/fwi2d/test_dispersion.py tests/fwi2d/test_stage_plan.py -q` and confirm intended failures.
 - [ ] Implement assessment and bounded selection over validated configurations. Treat PML reflection and linear solve convergence as independent gates. Refinement is allowed at stage boundaries only; map physical models consistently and reset incompatible optimizer histories.
 - [ ] Rerun tests and compare screened configurations with refined-reference wavefields. Record that local homogeneous dispersion estimates are not a global heterogeneous accuracy guarantee.
-- [ ] Commit with `feat: add explicit dispersion and memory-aware stage planning`.
+- [x] Commit with `feat: add explicit dispersion and memory-aware stage planning`.
 
 ## Task 12: Publish reproducible Marmousi experiments and public API
 
@@ -207,11 +227,11 @@ Supporting files: `tests/fwi2d/` for real executable tests, `examples/fwi2d/` fo
 
 **Interfaces:** `AcousticFWI(grid, acquisition, boundary, solver_config)` exposes `simulate(velocity, frequencies_hz, *, source_batch_size, recorder=None)` and `objective(observed, frequencies_hz, *, weights=1.0, regularizer=None) -> FWIObjective`. Users construct `VelocityParameters`, their native optimizer and `InversionRunner`; convenience APIs must preserve those explicit objects. A CLI accepts the same serialized experiment configuration and emits a run manifest.
 
-- [ ] Write a tiny end-to-end public-API test covering simulation, a native optimizer step, a physical HVP and output reload, plus invalid shape/unit/device errors. Test packaged example access outside the repository root.
-- [ ] Run `python -m pytest tests/fwi2d/test_public_api.py -q` and confirm intended failures.
-- [ ] Implement exports/CLI/examples using only public interfaces. Configure explicit SI imports, 25/12.5/6.25 m candidate grids, 2/5/10/15/20/30 Hz candidate frequencies and nested source sets to the usable aperture limit. Every expensive case requires a successful accuracy/resource preflight; default quickstart runs small Camembert, not the entire sweep.
-- [ ] Run a small CPU Marmousi forward/gradient case and save its accuracy, resource and source-coverage report. Clearly mark larger or higher-frequency cases as planned/unrun where budgets prevent validation.
-- [ ] Commit with `feat: expose reproducible Camembert and Marmousi workflows`.
+- [x] Write a tiny end-to-end public-API test covering simulation, a native optimizer step, a physical HVP and output reload, plus invalid shape/unit/device errors. Test packaged example access outside the repository root.
+- [x] Run `python -m pytest tests/fwi2d/test_public_api.py -q` and confirm intended failures.
+- [x] Implement exports/CLI/examples using only public interfaces. Configure explicit SI imports, 25/12.5/6.25 m candidate grids, 2/5/10/15/20/30 Hz candidate frequencies and nested source sets to the usable aperture limit. Every expensive case requires a successful accuracy/resource preflight; default quickstart runs small Camembert, not the entire sweep.
+- [x] Run a small CPU Marmousi forward/gradient case and save its accuracy, resource and source-coverage report. Clearly mark larger or higher-frequency cases as planned/unrun where budgets prevent validation.
+- [x] Commit with `feat: expose reproducible Camembert and Marmousi workflows`.
 
 ## Task 13: Execute a bounded RunPod validation experiment
 
@@ -223,7 +243,7 @@ Supporting files: `tests/fwi2d/` for real executable tests, `examples/fwi2d/` fo
 - [ ] Write the concrete experiment envelope: one GPU, exact workloads, maximum wall time, cost calculation, shutdown reserve >=USD 2, compute allowance <=USD 8 minus incurred costs, and a cleanup plan for task-created resources only. Include metering lag and all billed resources.
 - [ ] Start or reuse a suitable authorized resource within that envelope, enforce an external stop deadline where supported, and run task 10 device/precision tests plus one or more preflight-approved solver/gradient/HVP benchmarks. Do not install speculative alternate stacks or run an open-ended sweep on the meter.
 - [ ] Preserve result manifests, verify provider-side stopped/deleted state for task-created resources, and check billed expenditure. Report unknown final metering as unknown; do not claim a completed script stopped billing.
-- [ ] Commit sanitized evidence with `bench: record budgeted GPU validation and cost`. If access, budget or solver gates prevent a benchmark, record the blocker and leave GPU validation explicitly incomplete; never fabricate performance.
+- [x] Commit sanitized evidence with `bench: record budgeted GPU validation and cost`. If access, budget or solver gates prevent a benchmark, record the blocker and leave GPU validation explicitly incomplete; never fabricate performance.
 
 ## Task 14: Rewrite the README and finalize release documentation
 
@@ -231,15 +251,15 @@ Supporting files: `tests/fwi2d/` for real executable tests, `examples/fwi2d/` fo
 
 **Interfaces:** README code uses only task 12 public interfaces and the locked installation path. Workflow illustration nodes correspond to actual public components; the domain SVG is generated from the same boundary/grid configuration shown in the example.
 
-- [ ] Draft a concise outline: purpose; workflow illustration; CPU/GPU installation; runnable Camembert example with a native optimizer; PML/free-surface domain illustration; short Hessian/output usage links; measured capabilities/limitations; license/citation links. Target 350–600 words excluding code/illustration labels.
-- [ ] Write `test_readme_example` to execute the fenced quickstart code in a temporary output directory, checking finite data/loss and successful optimizer execution. Add local-link existence checks and assert that the referenced SVG exists. Run `python -m pytest tests/fwi2d/test_readme_example.py -q` to establish missing-doc/example failures.
-- [ ] Completely rewrite the root README around the validated implementation. Use Mermaid for the workflow and a deterministic Matplotlib SVG for the PML/free-surface geometry, with alt text/captions. Show one small example and link to advanced guides; omit unmeasured speedups, roadmap clutter, invented citations and unsupported backend claims.
-- [ ] Generate the illustration, inspect it visually, execute README commands from a clean locked install, check rendered Markdown/Mermaid readability and links, and run the CPU test suite. Document the actual optimizer/device matrix, all known limitations and GPU checks that remained unrun. Do not hide unresolved legacy failures by calling the entire repository green.
-- [ ] Write migration guidance from legacy dictionaries/flattened arrays to explicit SI grids and data axes. Preserve legacy entry points for this release unless a separate breaking-change decision is approved. Update package docs and CI to install/check subpackages from a wheel.
-- [ ] Commit with `docs: rewrite README with verified illustrated FWI quickstart`. Release only capabilities with passing evidence; the presence of the plan is not a release certification.
+- [x] Draft a concise outline: purpose; workflow illustration; CPU/GPU installation; runnable Camembert example with a native optimizer; PML/free-surface domain illustration; short Hessian/output usage links; measured capabilities/limitations; license/citation links. Target 350–600 words excluding code/illustration labels.
+- [x] Write `test_readme_example` to execute the fenced quickstart code in a temporary output directory, checking finite data/loss and successful optimizer execution. Add local-link existence checks and assert that the referenced SVG exists. Run `python -m pytest tests/fwi2d/test_readme_example.py -q` to establish missing-doc/example failures.
+- [x] Completely rewrite the root README around the validated implementation. Use Mermaid for the workflow and a deterministic Matplotlib SVG for the PML/free-surface geometry, with alt text/captions. Show one small example and link to advanced guides; omit unmeasured speedups, roadmap clutter, invented citations and unsupported backend claims.
+- [x] Generate the illustration, inspect it visually, execute README commands from a clean locked install, check rendered Markdown/Mermaid readability and links, and run the CPU test suite. Document the actual optimizer/device matrix, all known limitations and GPU checks that remained unrun. Do not hide unresolved legacy failures by calling the entire repository green.
+- [x] Write migration guidance from legacy dictionaries/flattened arrays to explicit SI grids and data axes. Preserve legacy entry points for this release unless a separate breaking-change decision is approved. Update package docs and CI to install/check subpackages from a wheel.
+- [x] Commit with `docs: rewrite README with verified illustrated FWI quickstart`. Release only capabilities with passing evidence; the presence of the plan is not a release certification.
 
 ## Completion and handoff
 
 The plan is complete when its documentation captures all agreed requirements; implementation is complete only when the applicable task checkboxes and scientific gates have evidence. Do not mark GPU scaling, full Marmousi inversion, or uncertainty accuracy complete based solely on small CPU tests.
 
-Before executing, review the specification and plan together and select the execution approach. Native sequential execution is a reasonable default because the operator/autograd/optimizer interfaces are tightly coupled; independent numerical review at milestone boundaries remains important. No agents, software changes or paid resources are started by saving this plan.
+Execution used agents with disjoint file ownership and independent numerical review, followed by controller integration in the existing isolated checkout. Further paid work remains conditional on the recorded RunPod access and cost gates. The remaining unchecked steps above are not completed by this handoff.
