@@ -208,3 +208,74 @@ def test_unreadable_staged_serialization_preserves_last_good(tmp_path, monkeypat
     assert path.read_bytes() == before
     assert load_checkpoint(path, CONFIG)['accepted_step'] == 1
     assert list(tmp_path.iterdir()) == [path]
+
+
+def _assert_restart_tree_equal(actual, expected):
+    if isinstance(expected, torch.Tensor):
+        torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+    elif isinstance(expected, dict):
+        assert actual.keys() == expected.keys()
+        for key in expected:
+            _assert_restart_tree_equal(actual[key], expected[key])
+    elif isinstance(expected, (list, tuple)):
+        assert type(actual) is type(expected) and len(actual) == len(expected)
+        for value, baseline in zip(actual, expected):
+            _assert_restart_tree_equal(value, baseline)
+    else:
+        assert actual == expected
+
+
+@pytest.mark.parametrize('representation', ['dense', 'sparse_embedding'])
+def test_velocity_parameterization_actual_mapping_roundtrip(tmp_path, representation):
+    from simplefwi.fwi2d.parameters import VelocityParameters
+    model = VelocityParameters([[1600., 1700.]], (1400., 2200.), representation=representation)
+    optimizer_type = torch.optim.Adam if representation == 'dense' else torch.optim.SparseAdam
+    optimizer = optimizer_type(model.parameters(), lr=.05)
+    ((model.velocity() - 1800.) / 1000.).square().sum().backward()
+    optimizer.step()
+    state = capture_checkpoint(model, optimizer, accepted_step=1, config=CONFIG)
+    assert state['model_parameterization']['bounds_m_s'] == [1400., 2200.]
+    assert state['model_parameterization']['representation'] == representation
+    path = tmp_path / 'velocity.pt'
+    save_checkpoint(path, state)
+    resumed = VelocityParameters([[1550., 1650.]], (1400., 2200.), representation=representation)
+    resumed_optimizer = optimizer_type(resumed.parameters(), lr=.01)
+    restore_checkpoint(load_checkpoint(path, CONFIG), resumed, resumed_optimizer)
+    torch.testing.assert_close(resumed.velocity(), model.velocity(), rtol=0, atol=0)
+    torch.testing.assert_close(resumed.raw_parameter, model.raw_parameter, rtol=0, atol=0)
+    _assert_restart_tree_equal(resumed_optimizer.state_dict(), optimizer.state_dict())
+
+
+def test_velocity_bounds_mismatch_rejected_before_model_optimizer_scheduler_or_rng_mutation():
+    from simplefwi.fwi2d.parameters import VelocityParameters
+    original = VelocityParameters([[1600., 1700.]], (1400., 2200.))
+    original_optimizer = torch.optim.Adam(original.parameters(), lr=.1)
+    original_scheduler = torch.optim.lr_scheduler.StepLR(original_optimizer, step_size=1)
+    state = capture_checkpoint(original, original_optimizer, original_scheduler,
+                               accepted_step=1, config=CONFIG)
+    target = VelocityParameters([[1900., 2000.]], (1000., 3000.))
+    optimizer = torch.optim.Adam(target.parameters(), lr=.03)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=2)
+    (target.raw_parameter.square().sum()).backward()
+    optimizer.step()
+    scheduler.step()
+    baseline = capture_checkpoint(target, optimizer, scheduler, accepted_step=4, config=CONFIG)
+    baseline_velocity = target.velocity().detach().clone()
+    with pytest.raises(ValueError, match='model parameterization'):
+        restore_checkpoint(state, target, optimizer, scheduler)
+    after = capture_checkpoint(target, optimizer, scheduler, accepted_step=4, config=CONFIG)
+    _assert_restart_tree_equal(after, baseline)
+    torch.testing.assert_close(target.velocity(), baseline_velocity, rtol=0, atol=0)
+
+
+def test_velocity_parameterization_metadata_required_and_representation_checked():
+    from simplefwi.fwi2d.parameters import VelocityParameters
+    source = VelocityParameters([[1600., 1700.]], (1400., 2200.))
+    optimizer = torch.optim.Adam(source.parameters())
+    state = capture_checkpoint(source, optimizer, accepted_step=1, config=CONFIG)
+    sparse = VelocityParameters([[1600., 1700.]], (1400., 2200.), representation='sparse_embedding')
+    with pytest.raises(ValueError, match='model parameterization'):
+        restore_checkpoint(state, sparse, torch.optim.SparseAdam(sparse.parameters()))
+    legacy = {key: value for key, value in state.items() if key != 'model_parameterization'}
+    with pytest.raises(ValueError, match='model parameterization'):
+        restore_checkpoint(legacy, source, optimizer)

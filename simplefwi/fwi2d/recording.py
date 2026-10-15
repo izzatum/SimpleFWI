@@ -1,8 +1,8 @@
 """Bounded, lossless HDF5 snapshots of explicitly accepted optimizer states.
 
-CPU arrays/tensors are copied into a two-chunk pool by default. Only the writer
-thread touches HDF5. CUDA payloads require a future pinned/event transfer adapter;
-this implementation rejects them rather than making an unbounded CPU copy.
+CPU arrays/tensors and CUDA tensors are copied into a two-chunk pool by default.
+CUDA copies use reusable pinned slots and events; only the writer touches HDF5.
+The CUDA execution path requires device validation before performance claims.
 """
 from __future__ import annotations
 
@@ -72,14 +72,64 @@ def _json(value):
     return json.dumps(value, default=convert, allow_nan=False)
 
 
+@dataclass
+class _CudaArray:
+    tensor: Any
+    dtype: np.dtype
+
+    @property
+    def shape(self):
+        return tuple(self.tensor.shape)
+
+    @property
+    def ndim(self):
+        return self.tensor.ndim
+
+
+@dataclass(eq=False)
+class _HostSlot:
+    raw: Any = None
+    owner: Any = None
+    event: Any = None
+    event_device: Any = None
+    event_pending: bool = False
+    stream: Any = None
+    references: tuple = ()
+
+    def wait(self):
+        # Keep the source, gather scratch, index tensors and pinned destination
+        # alive until the device has completed the corresponding copy.
+        if self.event_pending:
+            self.event.synchronize()
+        elif self.references and self.stream is not None:
+            # A launch/record failure can occur before an event was recorded.
+            self.stream.synchronize()
+        self.references = ()
+        self.event_pending = False
+        self.stream = None
+
+    def clear(self):
+        if self.event_pending or self.references:
+            raise RuntimeError('cannot release a CUDA recording slot before completion')
+        self.raw = self.owner = self.event = self.event_device = None
+
+
 def _array(value):
-    # Duck typing keeps this module usable without importing the torch runtime.
     if hasattr(value, 'detach'):
-        if value.device.type != 'cpu':
-            raise ValueError('CUDA recording requires an explicit pinned-buffer/event transfer adapter')
+        if value.device.type not in ('cpu', 'cuda'):
+            raise ValueError('recording supports CPU and CUDA tensors only')
         if value.is_conj() or value.is_neg():
             raise ValueError('lazy conjugate/negative tensor views must be resolved by the caller in bounded chunks')
-        value = value.detach().numpy()
+        value = value.detach()
+        if value.device.type == 'cuda':
+            try:
+                dtype = np.dtype(str(value.dtype).removeprefix('torch.'))
+            except TypeError as exc:
+                raise ValueError(f'unsupported CUDA recording dtype: {value.dtype}') from exc
+            if dtype.kind not in 'biufc':
+                raise ValueError('recording supports numeric tensors only')
+            return _CudaArray(value, dtype)
+        value = value.numpy()
     array = np.asarray(value)
     if array.dtype.kind not in 'biufc':
         raise ValueError('recording supports numeric arrays only')
@@ -101,6 +151,9 @@ class Recorder:
         self._producer = threading.Lock()
         self._queue = deque()
         self._pool = []
+        self._slots = []
+        self._cleanup_errors = []
+        self.peak_active_events = 0
         self._pending_bytes = 0
         self._pending_chunks = 0
         self._buffer_count = 0
@@ -119,9 +172,17 @@ class Recorder:
         with self._condition:
             return self._pending_bytes
 
+    @property
+    def active_events(self):
+        with self._condition:
+            return sum(slot.event_pending for slot in self._slots)
+
     def _check_error(self):
         if self._error is not None:
-            raise RuntimeError('recording writer failed') from self._error
+            error = RuntimeError('recording writer failed')
+            if self._cleanup_errors:
+                error.add_note('CUDA completion cleanup also failed; affected slot references remain owned by this recorder')
+            raise error from self._error
 
     def _submit(self, item, buffer=None):
         size = 0 if buffer is None else buffer.nbytes
@@ -143,10 +204,7 @@ class Recorder:
             self._queue.append(item)
             self._condition.notify_all()
 
-    def _get_buffer(self, count, dtype):
-        # Fixed-size buffers have a separate resident-byte cap, including idle
-        # pooled buffers and the producer's current copy. A nonintegral byte cap
-        # conservatively rounds down the pool capacity to whole chunks.
+    def _get_slot(self, count, dtype, cuda_device=None):
         size = count * dtype.itemsize
         pool_limit = min(self.policy.queue_capacity,
                          self.policy.max_queue_bytes // self.policy.chunk_bytes)
@@ -158,15 +216,72 @@ class Recorder:
                 room = (self._pending_chunks < self.policy.queue_capacity and
                         self._pending_bytes + size <= self.policy.max_queue_bytes)
                 if room and self._pool:
-                    raw = self._pool.pop()
-                    return raw[:size].view(dtype)
+                    slot = self._pool.pop()
+                    break
                 if room and self._buffer_count < pool_limit:
-                    raw = np.empty(self.policy.chunk_bytes, dtype=np.uint8)
+                    slot = _HostSlot()
+                    self._slots.append(slot)
                     self._buffer_count += 1
                     self.peak_buffer_bytes = max(self.peak_buffer_bytes,
                                                 self._buffer_count * self.policy.chunk_bytes)
-                    return raw[:size].view(dtype)
+                    break
                 self._condition.wait()
+            try:
+                if cuda_device is not None:
+                    import torch
+                    if slot.owner is None:
+                        # Drop an idle ordinary CPU allocation before upgrading;
+                        # mixed CPU/CUDA recording shares the same byte cap.
+                        slot.raw = None
+                        slot.owner = torch.empty(self.policy.chunk_bytes, dtype=torch.uint8,
+                                                 device='cpu', pin_memory=True)
+                        slot.raw = slot.owner.numpy()
+                    if slot.event is None or slot.event_device != cuda_device:
+                        slot.event = None
+                        with torch.cuda.device(cuda_device):
+                            slot.event = torch.cuda.Event(enable_timing=False)
+                        slot.event_device = cuda_device
+                elif slot.raw is None:
+                    slot.raw = np.empty(self.policy.chunk_bytes, dtype=np.uint8)
+            except BaseException:
+                slot.clear()
+                self._slots.remove(slot)
+                self._buffer_count -= 1
+                self._condition.notify_all()
+                raise
+            return slot
+
+    def _copy_cuda(self, array, coordinates, start, end, slot):
+        import torch
+        tensor = array.tensor
+        with torch.cuda.device(tensor.device):
+            slot.stream = torch.cuda.current_stream(tensor.device)
+            slot.references = (tensor,)
+            try:
+                if tensor.is_contiguous() and coordinates is None:
+                    chunk = tensor.view(-1)[start:end]
+                    index_tensors = ()
+                else:
+                    index_tensors = tuple(torch.as_tensor(coord, device=tensor.device)
+                                          for coord in coordinates)
+                    chunk = tensor[index_tensors]
+                slot.references = (tensor, chunk, *index_tensors)
+                destination = slot.owner[:(end - start) * array.dtype.itemsize].view(tensor.dtype)
+                destination.copy_(chunk, non_blocking=True)
+                slot.event.record(slot.stream)
+                slot.event_pending = True
+                with self._condition:
+                    self.peak_active_events = max(self.peak_active_events,
+                                                  sum(item.event_pending for item in self._slots))
+            except BaseException:
+                # If even synchronization fails, retain ownership in the slot;
+                # close reports failure instead of returning it to the pool.
+                slot.wait()
+                raise
+
+    def _finish_transfers(self):
+        for slot in tuple(self._slots):
+            slot.wait()
 
     def _prepare(self, name, payload):
         if not isinstance(payload, ArrayPayload):
@@ -182,7 +297,8 @@ class Recorder:
             raise ValueError('wavefield names must distinguish physical_wavefield/pml_wavefield')
         if 'gradient' in name and name not in ('physical_gradient', 'parameter_gradient'):
             raise ValueError('gradient names must distinguish physical_gradient/parameter_gradient')
-        attrs = {'axes': _json(payload.axes), 'units': payload.units, 'dtype': str(array.dtype)}
+        attrs = {'axes': _json(payload.axes), 'units': payload.units, 'dtype': str(array.dtype),
+                 'transfer_mode': 'cuda_pinned_event' if isinstance(array, _CudaArray) else 'cpu_copy'}
         indices = [range(n) for n in array.shape]
         for label, coordinate, selected in (
             ('frequencies', payload.frequencies, self.policy.frequencies),
@@ -251,12 +367,22 @@ class Recorder:
             loss = float(loss)
             if not math.isfinite(loss):
                 raise ValueError('accepted loss must be finite')
+            closure_evaluations = getattr(step_result, 'closure_evaluations', None)
+            if closure_evaluations is not None and (type(closure_evaluations) is not int or closure_evaluations < 0):
+                raise ValueError('closure_evaluations must be a nonnegative integer')
+            diagnostics = getattr(step_result, 'diagnostics', {})
+            if not isinstance(diagnostics, Mapping):
+                raise TypeError('accepted diagnostics must be a finite JSON mapping')
+            diagnostic_json = _json(dict(diagnostics))
+            if len(diagnostic_json.encode()) > 65536:
+                raise ValueError('accepted diagnostics exceed 64 KiB')
             prepared = []
             if number % self.policy.cadence == 0:
                 for name in self.policy.fields:
                     if name in payload:
                         prepared.append((name, *self._prepare(name, payload[name])))
-            self._submit({'kind': 'begin', 'step': number, 'loss': loss})
+            self._submit({'kind': 'begin', 'step': number, 'loss': loss,
+                          'closure_evaluations': closure_evaluations, 'diagnostics': diagnostic_json})
             for name, array, indices, attrs in prepared:
                 shape = tuple(len(i) for i in indices)
                 self._submit({'kind': 'dataset', 'step': number, 'name': name,
@@ -265,16 +391,54 @@ class Recorder:
                 elements = self.policy.chunk_bytes // array.dtype.itemsize
                 for start in range(0, total, elements):
                     end = min(start + elements, total)
-                    buffer = self._get_buffer(end - start, array.dtype)
-                    # Advanced indexing selects only this chunk, including for
-                    # noncontiguous arrays and source/frequency selections.
-                    coords = np.unravel_index(np.arange(start, end), shape)
-                    buffer[:] = array[tuple(c if isinstance(index, range) else
-                                               np.fromiter((index[int(i)] for i in c), dtype=np.intp, count=len(c))
-                                               for index, c in zip(indices, coords))]
-                    self._submit({'kind': 'array', 'step': number, 'name': name,
-                                  'start': start, 'end': end, 'shape': shape}, buffer)
+                    cuda = isinstance(array, _CudaArray)
+                    slot = self._get_slot(end - start, array.dtype,
+                                          array.tensor.device if cuda else None)
+                    buffer = slot.raw[:(end - start) * array.dtype.itemsize].view(array.dtype)
+                    try:
+                        # Unselected contiguous CUDA payloads need only a view.
+                        # Other gathers and index arrays are bounded to a chunk.
+                        direct_cuda = (cuda and array.tensor.is_contiguous() and
+                                       all(isinstance(index, range) for index in indices))
+                        if direct_cuda:
+                            coordinates = None
+                        else:
+                            coords = np.unravel_index(np.arange(start, end), shape)
+                            coordinates = tuple(c if isinstance(index, range) else
+                                np.fromiter((index[int(i)] for i in c), dtype=np.intp, count=len(c))
+                                for index, c in zip(indices, coords))
+                        if cuda:
+                            self._copy_cuda(array, coordinates, start, end, slot)
+                        else:
+                            buffer[:] = array[coordinates]
+                        self._submit({'kind': 'array', 'step': number, 'name': name,
+                                      'start': start, 'end': end, 'shape': shape, 'slot': slot}, buffer)
+                    except BaseException as exc:
+                        with self._condition:
+                            if self._error is None:
+                                self._error = exc
+                            self._closing = True
+                            self._condition.notify_all()
+                        try:
+                            slot.wait()
+                        except BaseException as cleanup:
+                            self._cleanup_errors.append(cleanup)
+                        raise
+                    finally:
+                        buffer = None
             self._submit({'kind': 'complete', 'step': number})
+            # Preserve CPU snapshot semantics: after return, even another stream
+            # can mutate/free source storage without racing an outstanding D2H.
+            # Archival writes may remain queued and are joined by close().
+            try:
+                self._finish_transfers()
+            except BaseException as exc:
+                with self._condition:
+                    if self._error is None:
+                        self._error = exc
+                    self._closing = True
+                    self._condition.notify_all()
+                raise RuntimeError('recording writer failed during CUDA transfer') from exc
             self._last_step = number
 
     def _write_chunk(self, handle, item):
@@ -282,7 +446,10 @@ class Recorder:
         key = f'steps/{item["step"]:012d}'
         if item['kind'] == 'begin':
             group = handle.create_group(key)
-            group.attrs.update(complete=False, accepted_step=item['step'], loss=item['loss'])
+            group.attrs.update(complete=False, accepted_step=item['step'], loss=item['loss'],
+                               diagnostics=item['diagnostics'])
+            if item['closure_evaluations'] is not None:
+                group.attrs['closure_evaluations'] = item['closure_evaluations']
         elif item['kind'] == 'dataset':
             ds = handle[key].create_dataset(item['name'], shape=item['shape'], dtype=item['dtype'],
                                              compression=self.policy.compression)
@@ -311,13 +478,14 @@ class Recorder:
             handle.flush()
 
     def _worker(self):
+        current = None
         try:
             path = Path(self.policy.path)
             path.parent.mkdir(parents=True, exist_ok=True)
             with h5py.File(path, 'x') as handle:
                 handle.attrs['schema_version'] = SCHEMA_VERSION
                 handle.attrs['metadata'] = _json(self.policy.metadata)
-                handle.attrs['transfer_mode'] = 'cpu_copy'
+                handle.attrs['transfer_mode'] = 'per_dataset'
                 handle.create_group('steps')
                 while True:
                     with self._condition:
@@ -325,27 +493,41 @@ class Recorder:
                             self._condition.wait()
                         if not self._queue:
                             break
-                        item = self._queue.popleft()
-                    self._write_chunk(handle, item)
+                        current = self._queue.popleft()
+                    slot = current.get('slot')
+                    if slot is not None:
+                        slot.wait()
+                    self._write_chunk(handle, current)
                     with self._condition:
-                        buffer = item.pop('buffer')
+                        buffer = current.pop('buffer')
                         if buffer is not None:
                             self._pending_bytes -= buffer.nbytes
-                            if len(self._pool) < self.policy.queue_capacity:
-                                self._pool.append(buffer.base)
+                            buffer = None
+                            self._pool.append(slot)
                         self._pending_chunks -= 1
+                        current = None
                         self._condition.notify_all()
                 handle.flush()
         except BaseException as exc:
             with self._condition:
-                self._error = exc
+                if self._error is None:
+                    self._error = exc
+                failed = ([current] if current is not None else []) + list(self._queue)
                 self._queue.clear()
                 self._pending_bytes = 0
                 self._pending_chunks = 0
                 self._condition.notify_all()
+            # Notify blocked producers first, then drain only worker-owned slots.
+            # A producer-owned, not-yet-enqueued transfer handles its own failure.
+            for item in failed:
+                slot = item.get('slot')
+                if slot is not None:
+                    try:
+                        slot.wait()
+                    except BaseException as cleanup:
+                        self._cleanup_errors.append(cleanup)
         finally:
             with self._condition:
-                self._pool.clear()
                 self._condition.notify_all()
 
     def close(self):
@@ -354,6 +536,18 @@ class Recorder:
                 self._closing = True
                 self._condition.notify_all()
             self._thread.join()
+            # The producer lock plus joined writer excludes slot reuse here.
+            # On failed device synchronization, preserve references on the
+            # recorder and raise; never recycle an uncertain DMA destination.
+            for slot in self._slots:
+                try:
+                    slot.wait()
+                    slot.clear()
+                except BaseException as cleanup:
+                    self._cleanup_errors.append(cleanup)
+                    if self._error is None:
+                        self._error = cleanup
+            self._pool.clear()
             self._closed = True
             self._check_error()
 

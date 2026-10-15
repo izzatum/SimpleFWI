@@ -2,7 +2,7 @@
 
 `simplefwi.fwi2d.recording` writes lossless local HDF5 archives. A single writer
 thread owns the file; `record_accepted` copies numeric CPU arrays or detached
-PyTorch tensors into bounded reusable buffers. Always use a context manager or
+CPU/CUDA PyTorch tensors into bounded reusable buffers. Always use a context manager or
 call `close()`: it flushes, joins the writer, and propagates disk errors. An
 existing archive is rejected rather than overwritten. Use a fresh archive path
 when continuing a run.
@@ -31,7 +31,9 @@ Rejected trial closures must not invoke accepted-state callbacks: an explicit
 `accepted=False` is rejected before writing. This interface cannot establish
 optimizer acceptance from tensor values; the optimizer driver owns that decision.
 A diagnostic group is written for every accepted call, including steps excluded
-by snapshot cadence. Arrays are opt-in (`fields=()` by default); wavefields and
+by snapshot cadence. Optional `closure_evaluations` and finite JSON `diagnostics`
+are stored with each step (diagnostics are capped at 64 KiB and serialized before
+enqueue, so later mutation does not change them). Arrays are opt-in (`fields=()` by default); wavefields and
 gradients are off. Model snapshots can be selected with `fields=("model",)` at
 `cadence=1`, matching the recommended every-accepted-step checkpoint cadence.
 Neither the recorder nor the checkpoint primitive automatically schedules
@@ -93,10 +95,42 @@ mutation cannot alter the snapshot and the queue holds no autograd graph. CPU
 recording is implemented and tested for tensors without unresolved conjugate or
 negative view bits. Lazy conjugate/negative views are explicitly rejected before
 copying; callers can resolve independently bounded slices before recording.
-CUDA tensors raise an explicit error: a
-pinned-buffer/event transfer path is not implemented or validated here. Copying a
-whole CUDA tensor to CPU before calling the recorder is the caller's separate
-memory allocation and transfer cost, not bounded GPU recording.
+CUDA tensors use reusable pinned host buffers and one reusable CUDA event per
+slot. Contiguous unselected inputs use a device view of at most `chunk_bytes`;
+other inputs gather at most one output chunk, with device index scratch bounded
+by chunk size and rank. No complete tensor is copied to CPU internally. Copies
+run on the caller's current stream for the source device, followed by a recorded
+completion event; normal PyTorch cross-stream source-read dependencies remain
+the caller's responsibility. The writer waits for the event before reading the
+host buffer. Slots retain the detached source storage, device gather/index
+scratch and pinned destination until completion, and cannot be reused early.
+
+`record_accepted` waits for its outstanding copy events before returning, making
+subsequent source mutation safe even on a different stream. Archival HDF5 writes
+can remain pending. This intentionally trades transfer overlap across accepted
+callbacks for clear snapshot semantics; it does not claim zero transfer cost.
+CPU and CUDA recording share the same slot and byte caps, with at most one event
+per resident slot (`active_events` and `peak_active_events` expose in-flight event
+counts). Pinning an idle CPU slot first releases its ordinary CPU allocation.
+Host/device allocator caches and caller-owned source storage are separate from
+live copied-slot bytes; device gather/index scratch is bounded per outstanding
+slot but is not included in `peak_buffer_bytes`, which measures host slots.
+
+Writer/device errors wake blocked producers and propagate through recording or
+`close`. Closing joins the writer, drains transfers and clears completed slots,
+events and references. If the CUDA runtime cannot establish completion, the
+recorder raises and retains affected slot references on the recorder object;
+it never recycles an uncertain DMA destination. PyTorch's pinned allocator also
+tracks its copy uses. Do not reuse the failed recorder. Device synchronization
+relies on CUDA runtime progress: Python cannot recover a hung GPU or guarantee a
+shutdown deadline after a driver/device hang.
+
+The CUDA implementation is **not device-verified in this CPU-only environment**.
+Three CUDA-marked tests require an actual runtime/device and currently skip;
+skips are not passes. CPU tests of synthetic completion errors exercise host
+ownership/error-control logic only. CUDA roundtrip, real pinned transfers,
+stream/event behavior, disk-failure draining, timing and device peak memory still
+require execution on GPU before a CUDA recording validation claim.
 
 ## Checkpoints
 
@@ -107,6 +141,17 @@ scheduler dictionaries/classes, model shapes and dtypes, optimizer parameter
 group shapes, accepted counter, Python/NumPy/Torch RNGs, already-initialized CUDA
 RNGs, configuration and metadata. Metadata automatically includes Torch and NumPy
 versions. Supply seed/Git revision and other run provenance explicitly.
+
+For `VelocityParameters`, an explicit `model_parameterization` checkpoint field
+also records the actual model's SI velocity bounds, dense/sparse representation,
+class and bounded sigmoid transform. These plain attributes are not tensor state
+and would otherwise silently change the physical meaning of restored parameters
+and optimizer moments. Restore checks this field before mutating the receiving
+model, optimizer, scheduler or RNG. Construct the receiving `VelocityParameters`
+with the same bounds and representation; changed bounds are rejected even if the
+caller supplies matching config hashes and tensor shapes. An older velocity
+checkpoint missing this mapping field is rejected. Generic `nn.Module` checkpoints
+use `None` for this optional mapping field and retain normal tensor-state behavior.
 
 `config` must contain nonempty `parameterization`, `dataset_hash`, `model_hash`,
 and `config_hash`. Applications compute these from canonical dataset/model/config
@@ -147,8 +192,8 @@ A post-rename durability failure can raise even if the new complete file exists.
 `weights_only=True`, validates schema and all four identity fields, and checks
 additional expected config values recursively. It can also check
 `optimizer_class`, `scheduler_class` and `model_shapes`. `restore_checkpoint`
-checks model shapes/precision, native optimizer class/group shapes, and scheduler
-class before applying state. RNG restoration is on by default; CUDA RNG device
+checks actual supported physical parameterization, model shapes/precision,
+native optimizer class/group shapes, and scheduler class before applying state. RNG restoration is on by default; CUDA RNG device
 count must match. Passing `restore_rng=False` explicitly omits all RNG restoration
 and therefore forfeits stochastic restart equivalence. Exact deterministic CPU
 Adam + StepLR continuation is tested, including optimizer moments and random
@@ -171,6 +216,16 @@ The payload was 9437184 bytes (about 16.6 MiB/s over the timed on run). Initial 
 was 341076 / 340980 KiB respectively; the on process's increase was 4736 KiB.
 These are single local measurements including asynchronous flush/join, not an
 FWI solve benchmark or speedup claim. HDF5/allocator caches contribute to RSS.
-No CUDA device was used; peak device memory was **not measured**. The complete
-microbenchmark recipe and focused test evidence are recorded in
-`.superpowers/sdd/fwi-redesign/task-9-report.md`.
+No CUDA device was used; peak device memory was **not measured**. Reproduce the
+measurement with the [standalone benchmark](../benchmarks/fwi2d/recording.py)
+from the repository root after installing SimpleFWI:
+
+```bash
+OPENBLAS_NUM_THREADS=1 python benchmarks/fwi2d/recording.py off
+OPENBLAS_NUM_THREADS=1 python benchmarks/fwi2d/recording.py on
+```
+
+Each invocation reports elapsed loop/close time, process RSS, copied-buffer and
+queue peaks, output bytes and checksum. Run off/on in separate processes as shown.
+The script retains the original fixed bounded-source numerical workload; its
+results on another machine or implementation revision must be measured afresh.

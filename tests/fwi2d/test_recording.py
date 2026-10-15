@@ -231,3 +231,205 @@ def test_oversized_coordinate_metadata_rejected_with_fixed_preparation_storage(t
         _, peak = tracemalloc.get_traced_memory()
         tracemalloc.stop()
         assert peak < 4 * 1024 * 1024
+
+
+@pytest.mark.cuda
+@pytest.mark.skipif(not __import__('torch').cuda.is_available(), reason='requires actual CUDA runtime/device; not device-verified on CPU')
+def test_cuda_pinned_event_roundtrip_selected_noncontiguous_and_no_whole_host_copy(tmp_path, monkeypatch):
+    import torch
+    base = torch.arange(3 * 5 * 7, dtype=torch.float64, device='cuda').reshape(3, 5, 7)
+    value = torch.complex(base, base * 2).transpose(1, 2)
+    expected = value[1:2].cpu().numpy().copy()
+    original_cpu = torch.Tensor.cpu
+    def no_cuda_cpu(self, *args, **kwargs):
+        if self.device.type == 'cuda':
+            pytest.fail('recorder attempted whole CUDA tensor .cpu()')
+        return original_cpu(self, *args, **kwargs)
+    monkeypatch.setattr(torch.Tensor, 'cpu', no_cuda_cpu)
+    path = tmp_path / 'cuda.h5'
+    recorder = Recorder(RecordingPolicy(path, fields=('pml_wavefield',), sources=(7,), chunk_bytes=64))
+    recorder.record_accepted(accepted(), {'pml_wavefield': ArrayPayload(
+        value, ('source_batch', 'z_padded', 'x_padded'), 'Pa', sources=(5, 7, 9))})
+    # Completion at return preserves snapshot semantics even with immediate reuse.
+    value.fill_(99)
+    assert recorder.active_events == 0
+    assert recorder.peak_active_events <= 2
+    assert recorder.peak_buffer_bytes <= 128
+    assert any(slot.owner is not None and slot.owner.is_pinned() for slot in recorder._slots)
+    recorder.close()
+    assert all(slot.owner is None and slot.event is None and not slot.references for slot in recorder._slots)
+    with h5py.File(path, 'r') as f:
+        ds = f['steps/000000000001/pml_wavefield']
+        np.testing.assert_array_equal(ds[:], expected)
+        assert ds.attrs['transfer_mode'] == 'cuda_pinned_event'
+
+
+@pytest.mark.cuda
+@pytest.mark.skipif(not __import__('torch').cuda.is_available(), reason='requires actual CUDA runtime/device; not device-verified on CPU')
+def test_cuda_writer_waits_events_and_reuses_bounded_slots(tmp_path, monkeypatch):
+    import torch
+    original = Recorder._write_chunk
+    writer_slots = []
+    def inspected(self, handle, item):
+        if item['kind'] == 'array' and item.get('slot') is not None:
+            slot = item['slot']
+            assert not slot.event_pending
+            assert not slot.references
+            writer_slots.append(id(slot))
+        return original(self, handle, item)
+    monkeypatch.setattr(Recorder, '_write_chunk', inspected)
+    recorder = Recorder(RecordingPolicy(tmp_path / 'cuda-reuse.h5', fields=('model',), chunk_bytes=64))
+    tensor = torch.arange(100., dtype=torch.float64, device='cuda')
+    for step in range(1, 4):
+        recorder.record_accepted(accepted(step), {'model': ArrayPayload(tensor, ('x',), 'm/s')})
+    recorder.close()
+    assert len(writer_slots) > 2
+    assert len(set(writer_slots)) <= 2
+    assert recorder.peak_pending_chunks <= 2
+    assert recorder.peak_pending_bytes <= 128
+    assert recorder.peak_buffer_bytes <= 128
+    assert recorder.peak_active_events <= 2
+    assert recorder.active_events == 0
+
+
+@pytest.mark.cuda
+@pytest.mark.skipif(not __import__('torch').cuda.is_available(), reason='requires actual CUDA runtime/device; not device-verified on CPU')
+def test_cuda_disk_failure_drains_events_and_propagates_without_stuck_producer(tmp_path, monkeypatch):
+    import torch
+    original = Recorder._write_chunk
+    def fail(self, handle, item):
+        if item['kind'] == 'array':
+            raise OSError('injected CUDA archival disk failure')
+        return original(self, handle, item)
+    monkeypatch.setattr(Recorder, '_write_chunk', fail)
+    recorder = Recorder(RecordingPolicy(tmp_path / 'cuda-failed.h5', fields=('model',), chunk_bytes=64))
+    source = torch.arange(100., dtype=torch.float64, device='cuda')
+    try:
+        recorder.record_accepted(accepted(), {'model': ArrayPayload(source, ('x',), 'm/s')})
+    except RuntimeError as exc:
+        assert 'writer failed' in str(exc)
+    with pytest.raises(RuntimeError, match='writer failed'):
+        recorder.close()
+    assert not recorder._thread.is_alive()
+    assert recorder.active_events == 0
+    assert all(not slot.references and slot.owner is None for slot in recorder._slots)
+
+
+def test_cpu_then_cpu_slots_are_released_and_have_no_events(tmp_path):
+    recorder = Recorder(RecordingPolicy(tmp_path / 'cpu-clean.h5', fields=('model',), chunk_bytes=32))
+    recorder.record_accepted(accepted(), {'model': ArrayPayload(np.arange(10.), ('x',), 'm/s')})
+    recorder.close()
+    assert recorder.active_events == 0
+    assert recorder.peak_active_events == 0
+    assert all(slot.raw is None and slot.owner is None and slot.event is None for slot in recorder._slots)
+
+
+def test_host_control_flow_completion_failure_wakes_producer_and_preserves_ownership(tmp_path, monkeypatch):
+    """Synthetic event tests host error handling only; this is not CUDA evidence."""
+    original = Recorder._get_slot
+    token = object()
+    class FailedCompletion:
+        def synchronize(self):
+            raise RuntimeError('injected completion failure (host control-flow probe)')
+    def failed_slot(self, count, dtype, cuda_device=None):
+        slot = original(self, count, dtype, cuda_device)
+        slot.event = FailedCompletion()
+        slot.event_pending = True
+        slot.references = (token,)
+        return slot
+    monkeypatch.setattr(Recorder, '_get_slot', failed_slot)
+    recorder = Recorder(RecordingPolicy(tmp_path / 'event-failed.h5', fields=('model',), chunk_bytes=16))
+    finished = threading.Event()
+    caught = []
+    def produce():
+        try:
+            recorder.record_accepted(accepted(), {'model': ArrayPayload(np.arange(40.), ('x',), 'm/s')})
+        except RuntimeError as exc:
+            caught.append(exc)
+        finally:
+            finished.set()
+    producer = threading.Thread(target=produce, daemon=True)
+    producer.start()
+    assert finished.wait(5), 'producer remained blocked after completion failure'
+    producer.join(1)
+    with pytest.raises(RuntimeError, match='writer failed'):
+        recorder.close()
+    assert caught and not recorder._thread.is_alive()
+    assert any(slot.references == (token,) for slot in recorder._slots)
+    assert any(slot.raw is not None for slot in recorder._slots)
+    with h5py.File(tmp_path / 'event-failed.h5', 'r') as f:
+        assert not f['steps/000000000001'].attrs['complete']
+
+
+def test_host_control_flow_slot_does_not_clear_before_event_completion():
+    """Synthetic event checks ownership state transitions, not device correctness."""
+    from simplefwi.fwi2d.recording import _HostSlot
+    calls = []
+    class Completion:
+        def synchronize(self):
+            calls.append('wait')
+    slot = _HostSlot(raw=np.empty(4, dtype=np.uint8), event=Completion(),
+                     event_pending=True, references=(object(),))
+    with pytest.raises(RuntimeError, match='before completion'):
+        slot.clear()
+    slot.wait()
+    assert calls == ['wait'] and not slot.references and not slot.event_pending
+    slot.clear()
+    assert slot.raw is None and slot.event is None
+
+
+def test_small_accepted_diagnostics_persist_when_arrays_skipped(tmp_path):
+    path = tmp_path / 'diagnostics.h5'
+    diagnostics = {'optimizer_class': 'LBFGS', 'learning_rates': [1.], 'gradient_norm': .5}
+    with Recorder(RecordingPolicy(path, cadence=5)) as recorder:
+        recorder.record_accepted(accepted(1, closure_evaluations=3, diagnostics=diagnostics), {})
+        diagnostics['learning_rates'][0] = 99.
+    with h5py.File(path, 'r') as f:
+        attrs = f['steps/000000000001'].attrs
+        assert attrs['closure_evaluations'] == 3
+        saved = json.loads(attrs['diagnostics'])
+        assert saved['learning_rates'] == [1.]
+        assert saved['gradient_norm'] == .5
+
+
+def test_oversized_or_nonfinite_diagnostics_rejected_before_recording(tmp_path):
+    path = tmp_path / 'invalid-diagnostics.h5'
+    with Recorder(RecordingPolicy(path)) as recorder:
+        for diagnostics in ({'large': 'x' * 65537}, {'value': float('nan')}):
+            with pytest.raises(ValueError):
+                recorder.record_accepted(accepted(diagnostics=diagnostics), {})
+        with pytest.raises(ValueError, match='closure_evaluations'):
+            recorder.record_accepted(accepted(closure_evaluations=-1), {})
+    with h5py.File(path, 'r') as f:
+        assert len(f['steps']) == 0
+
+
+def test_later_slot_allocation_failure_preserves_original_error_and_accounting(tmp_path, monkeypatch):
+    """Host allocation cleanup regression; does not require or verify CUDA."""
+    recorder = Recorder(RecordingPolicy(tmp_path / 'allocation-failed.h5', chunk_bytes=32))
+    dtype = np.dtype('float64')
+    first = recorder._get_slot(4, dtype)
+    failure = MemoryError('injected second-slot allocation failure')
+    original_empty = np.empty
+    producer_thread = threading.current_thread()
+    def fail_allocation(*args, **kwargs):
+        if threading.current_thread() is producer_thread:
+            raise failure
+        return original_empty(*args, **kwargs)
+    try:
+        with monkeypatch.context() as patch:
+            patch.setattr(np, 'empty', fail_allocation)
+            with pytest.raises(MemoryError) as caught:
+                recorder._get_slot(4, dtype)
+        assert caught.value is failure
+        assert recorder._buffer_count == 1
+        assert len(recorder._slots) == 1 and recorder._slots[0] is first
+        assert recorder._pool == []
+        assert first.raw is not None
+        assert recorder.pending_bytes == 0 and recorder.active_events == 0
+        second = recorder._get_slot(4, dtype)
+        assert second is not first and second.raw is not None
+        assert recorder._buffer_count == 2 and len(recorder._slots) == 2
+        assert recorder.peak_buffer_bytes <= 64
+    finally:
+        recorder.close()

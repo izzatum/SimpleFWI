@@ -7,6 +7,7 @@ required. Identity hashes are supplied by the application, then checked on load.
 from __future__ import annotations
 
 import copy
+import math
 import os
 from pathlib import Path
 import random
@@ -22,6 +23,19 @@ _IDENTITIES = ('parameterization', 'dataset_hash', 'model_hash', 'config_hash')
 
 def _class_name(obj):
     return f'{type(obj).__module__}.{type(obj).__qualname__}'
+
+
+def _model_parameterization(model):
+    """Capture physical mapping attributes absent from tensor state_dicts."""
+    from .parameters import VelocityParameters
+    if not isinstance(model, VelocityParameters):
+        return None
+    return {
+        'class': _class_name(model),
+        'transform': 'bounded_velocity_sigmoid',
+        'bounds_m_s': [float(bound) for bound in model.bounds],
+        'representation': model.representation,
+    }
 
 
 def _snapshot(obj):
@@ -89,6 +103,18 @@ def _validate(state):
                 'model_dtypes', 'optimizer_shapes'):
         if key not in state:
             raise ValueError(f'checkpoint missing {key}')
+    parameterization = state.get('model_parameterization')
+    if parameterization is not None:
+        if (not isinstance(parameterization, dict) or
+                not isinstance(parameterization.get('class'), str) or
+                parameterization.get('transform') != 'bounded_velocity_sigmoid' or
+                parameterization.get('representation') not in ('dense', 'sparse_embedding')):
+            raise ValueError('invalid model parameterization metadata')
+        bounds = parameterization.get('bounds_m_s')
+        if (not isinstance(bounds, list) or len(bounds) != 2 or
+                any(type(value) not in (int, float) or not math.isfinite(value) for value in bounds) or
+                not 0 < bounds[0] < bounds[1]):
+            raise ValueError('invalid model parameterization velocity bounds')
     _config(state['config'])
     if not isinstance(state['accepted_step'], int) or state['accepted_step'] < 0:
         raise ValueError('accepted_step must be a nonnegative integer')
@@ -110,6 +136,7 @@ def capture_checkpoint(model, optimizer, scheduler=None, *, accepted_step, confi
         'schema_version': SCHEMA_VERSION,
         'accepted_step': accepted_step,
         'model': _snapshot(model_state),
+        'model_parameterization': _model_parameterization(model),
         'model_shapes': {name: list(value.shape) for name, value in model_state.items()},
         'model_dtypes': {name: str(value.dtype) for name, value in model_state.items()},
         'optimizer': _snapshot(optimizer.state_dict()),
@@ -202,6 +229,8 @@ def restore_checkpoint(state, model, optimizer, scheduler=None, *, restore_rng=T
     relocation; no optimizer-state format is reimplemented here.
     """
     _validate(state)
+    if state.get('model_parameterization') != _model_parameterization(model):
+        raise ValueError('model parameterization mismatch: physical velocity bounds, representation or class')
     current = model.state_dict()
     shapes = {name: list(value.shape) for name, value in current.items()}
     if shapes != state['model_shapes']:
