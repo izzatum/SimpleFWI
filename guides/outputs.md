@@ -39,6 +39,26 @@ gradients are off. Model snapshots can be selected with `fields=("model",)` at
 Neither the recorder nor the checkpoint primitive automatically schedules
 optimizer callbacks.
 
+## Persistent cloud storage
+
+An existing RunPod global volume can hold completed run archives after its GPU
+pod is deleted. Attach the volume when creating the pod and choose an explicit
+mount path, such as `/data`; use a new directory for each run and stage. The
+solver and recorder accept ordinary paths and do not create cloud resources.
+
+Keep active HDF5 files and atomic restart checkpoints on a filesystem whose
+locking and rename semantics have been verified. For an untested cloud mount,
+write locally, close and flush the archive, copy it to persistent storage, then
+verify its byte count and SHA-256 before deleting the local copy or terminating
+the pod. Publish the small provenance manifest after the data files. Copy a
+checkpoint back to local storage and verify it before resuming.
+
+Limit snapshot cadence and selected fields, and budget both staging-disk space
+and retained storage. A bounded queue applies backpressure when storage is
+slow; asynchronous output does not make I/O free. Global-volume throughput and
+filesystem semantics have not been measured by this project's validation runs.
+Deleting a GPU pod does not delete or stop billing for separately retained data.
+
 ## Axes and provenance
 
 Every array requires unique axis names matching its dimensions and explicit
@@ -125,12 +145,16 @@ tracks its copy uses. Do not reuse the failed recorder. Device synchronization
 relies on CUDA runtime progress: Python cannot recover a hung GPU or guarantee a
 shutdown deadline after a driver/device hang.
 
-The CUDA implementation is **not device-verified in this CPU-only environment**.
-Three CUDA-marked tests require an actual runtime/device and currently skip;
-skips are not passes. CPU tests of synthetic completion errors exercise host
-ownership/error-control logic only. CUDA roundtrip, real pinned transfers,
-stream/event behavior, disk-failure draining, timing and device peak memory still
-require execution on GPU before a CUDA recording validation claim.
+Three actual-device recording tests passed as part of the ten-test
+[A40 CUDA run](../benchmarks/fwi2d/results/runpod-multiscale.json) at source
+revision `abbfe1f`, with PyTorch 2.12.0+cu130, CUDA 13.0 and driver 580.178.04.
+They verify selected noncontiguous roundtrips without whole-tensor host copies,
+pinned destinations, completion before source reuse, bounded slot/event reuse,
+and event draining after an injected disk failure. These establish the tested
+transfer and failure semantics on that configuration, not recording throughput,
+global-volume performance or arbitrary stream/driver behavior. CPU synthetic
+completion-error tests remain host-control-flow evidence only. The historical
+CPU timing measurements below do not become GPU measurements.
 
 ## Checkpoints
 

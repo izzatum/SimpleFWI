@@ -60,26 +60,34 @@ review checked native plots and rendered notebooks at desktop and narrow widths.
 Open multi-panel figures at their native size or zoom when using a small screen.
 The CPU CI job now executes these tutorials on future changes.
 
-GPU validation remains unrun. RunPod account access worked during two earlier
-allocations, but their execution connections failed: SSH was unreachable and authenticated Jupyter
-requests received Cloudflare error 1010. **Both test pods were deleted and no
-persistent storage was created.** See the [attempt record](../benchmarks/fwi2d/results/runpod-attempts.json).
-The [latest read-only retry](../benchmarks/fwi2d/results/runpod-retry.json) created
-no pod: REST remains blocked by Cloudflare, and API authentication is unavailable
-after publication removed `api.runpod.io` from the secret's allowed destinations.
-Edit the existing `RUNPOD_API_KEY` entry to include both `api.runpod.io` and
-`rest.runpod.io`, then save and publish. Do not create a duplicate secret.
+Notebook 01 subsequently executed its unchanged **11 code cells without errors**
+on NVIDIA A40, driver 580.178.04, PyTorch 2.12.0+cu130 and CUDA 13.0 at source
+revision `abbfe1f`. Its full Marmousi forward calculation remains a CPU run;
+the bounded CUDA crop passed the residual and `<1e-7` waveform/data agreement
+assertions. Table errors formatted as `0.0` are rounding, not exact-zero errors.
+The [GPU execution summary](../benchmarks/fwi2d/results/runpod-notebook-01-summary.json)
+records the code hash, kernel and numerical outcome.
 
-To run the GPU section from an accessible RunPod session, copy this checkout
-into a pod with a matching PyTorch 2.12.0 CUDA environment, expose Jupyter on
-`8888/http`, and open its authenticated Jupyter service through RunPod's Connect
-panel. Install the repository dependencies and select that Python kernel; check
-`torch.cuda.is_available()` before running notebook 01. The notebook performs
-the matched numerical comparison itself. Terminate/delete the pod after use,
-and remove any separately created storage. To restore automated access from
-this cloud workspace, ask RunPod support to resolve the SSH connection failure
-and Cloudflare 1010 on authenticated pod-proxy HTTPS/WebSocket traffic; the
-account API must also be rechecked after restoring its credential destination.
+The public notebooks retain their reviewed **CPU execution outputs and all 16
+figures**. The [supplemental GPU notebook](../benchmarks/fwi2d/results/runpod-notebook-01.ipynb.gz)
+is a gzip-compressed execution artifact with no embedded plots because the
+headless backend did not capture its figures. It is separate evidence, not a
+replacement or mixture of runs. Notebooks 02 and 03 remain CPU-only validation.
+The [hardware record](../benchmarks/fwi2d/results/runpod-multiscale.json) also
+contains ten passed library CUDA tests, a small solver benchmark and three-stage
+Marmousi example. Selected SGD/Adam paths are covered; other optimizer/device
+combinations and GPU speedup are not established.
+
+The completed test pod was deleted and its absence verified; existing global
+storage was preserved. Earlier
+[SSH/Jupyter failures](../benchmarks/fwi2d/results/runpod-attempts.json) remain
+recorded separately.
+
+On a machine with actual CUDA, install the matching PyTorch wheel and run
+notebook 01. It reports the executed device and performs its own numerical
+comparison. Terminate/delete a rented GPU pod after use and preserve only the
+storage you intend to retain. See the [bounded RunPod protocol](../benchmarks/fwi2d/runpod_protocol.md)
+and [persistent-output guidance](../guides/outputs.md#persistent-cloud-storage).
 
 ## Interpret the results
 

@@ -1,88 +1,146 @@
-# Bounded RunPod validation protocol and attempted execution
+# Bounded RunPod validation
 
-**GPU numerical validation remains incomplete. Both earlier task-created Pods were terminated and provider absence verified.** Two bounded allocations of one A40 at a time were attempted, with no numerical GPU workload executed. [Structured lifecycle evidence](results/runpod-attempts.json) records the exact timeline, budget and cleanup; [preflight status](results/runpod-preflight.json) preserves the access history.
+The current implementation has **463 passing CPU tests** and **10 passing CUDA
+cases** on an NVIDIA A40. The CPU/CUDA solver benchmarks, three-stage Marmousi
+continuation and notebook 01's CUDA branch passed on source revision `abbfe1f`.
+The final pod was deleted immediately after result retrieval. The [current run manifest](results/runpod-multiscale.json)
+records actual allocation, source-transfer, failure, billing and deletion facts;
+[earlier attempts](results/runpod-attempts.json) and the
+[credential-binding retry](results/runpod-retry.json) remain historical evidence.
 
-## Latest retry: 15 October 2026, 15:35 UTC
+## Supported access and immutable source
 
-The user-requested [read-only retry](results/runpod-retry.json) was blocked before allocation. The newly published `RUNPOD_API_KEY` binding permits only `rest.runpod.io`; its previously working `api.runpod.io` destination is missing. REST inventory and billing still return Cloudflare HTTP 403/error 1010, while API account and billing return HTTP 401. This does not establish that the real key expired. No new resource was created, no new allocation charge was incurred, and no GPU workload ran. Current inventory and settled billing could not be refreshed; the earlier deletion confirmations below remain historical evidence.
+The published credential binding now permits `api.runpod.io` and
+`rest.runpod.io`. GraphQL and documented API-v2 inventory, billing, creation,
+logging and deletion work. Earlier SSH/Jupyter transport failures and REST
+Cloudflare denials do not establish a numerical CUDA failure.
 
-Edit the **existing** secret in environment settings to allow both `api.runpod.io` and `rest.runpod.io`, then save and publish. The configuration tool rejected this destination change with `INVALID_ARGUMENT` and explicitly requires editing the existing entry; no binding change was saved and no duplicate secret is needed. Restoring the binding permits a fresh control-plane check; it does not by itself resolve the earlier SSH/Jupyter access failures. Recheck control, billing and a supported workload path before another bounded allocation.
+Create-time `cmd` executes a small launcher; authenticated API-v2 Server-Sent
+Events return its logs and checksum-framed results. Large embedded-source requests
+were rejected with HTTP 413 before allocation. A small launcher successfully
+allocated a pod and obtained logs by downloading source from an immutable public
+GitHub commit. Its first run stopped at an inherited environment-variable check
+before source download; the pod was immediately deleted.
 
-## Observed outcome on 15 October 2026
+The corrected launcher removes the inherited provider-key variable by name
+before downloading or executing the workload. It never receives the local
+provider credential. Public source downloads use normal verified HTTPS, fixed
+byte counts and SHA-256, validated archive paths/types/size limits, and the
+reviewed commit. No access-control or TLS bypass, silent CPU fallback, precision
+reduction, or relaxed solver tolerance is permitted.
 
-| Phase | Result |
-| --- | --- |
-| Initial pre-publication checks | Historical account/pricing HTTP 401 and REST HTTP 403; not proof the real key expired |
-| Fresh published-runtime account checks | GraphQL/API-v2 HTTP 200; credit sufficient for the USD 10 budget; current rate USD 0/hour; no existing compute/storage resources; today's itemized history reported zero |
-| Actual A40 quote/allocation | One NVIDIA A40 at USD 0.59/hour, 40 GB ephemeral disk, no persistent/network/global mounts |
-| Attempt 1, SSH transport | Pod `144hxuu5czqg3h`, exposed 22/tcp; provider-reported direct SSH connection refused and supported SSH gateway handshake unavailable |
-| Initial HTTP probe during attempt 1 | Port 19123 was not explicitly exposed; unauthenticated HTTP 403 with body not retained. This probe was inconclusive for HTTP execution |
-| Local corrected HTTP client proof | Real loopback Jupyter contents upload/download, kernel WebSocket execution, SHA-256 verification and safe extraction passed; ephemeral authentication token not logged |
-| Attempt 2, explicitly configured Jupyter | Pod `qzu87v7wplhu0d`, exposed 8888/http, `startJupyter=true`, fresh workload-token header; authenticated contents request returned HTTP 403 with body `error code: 1010` |
-| Final provider check, 23:16:11 MYT (UTC+8) | Both individual Pod GETs returned 404; complete Pod/network-volume/global-volume/serverless/cluster inventories empty; account rate USD 0/hour |
-| Accounting snapshot | Credit sufficient for the task budget; observed account debit USD 0.0623020102; final itemized task cost unknown because history still lagged |
+Use an isolated task virtual environment while preserving the image's verified
+CUDA Torch installation. Global pip installation encountered a Debian package
+without uninstall metadata. Check the actual interpreter, Torch version and
+module path before and after dependency installation, run `pip check`, and bind
+notebook execution to that same interpreter.
 
-Attempt 1 was created at 22:59:09 MYT and provider-confirmed absent at 23:05:33 MYT. Attempt 2 was created at 23:13:29 MYT and provider-confirmed absent at 23:14:22 MYT. These times are Malaysia Time (UTC+8); structured audit records use UTC. Each controller issued DELETE, confirmed GET 404 and two successive task-name-filtered empty inventory checks. No task-created billable resource remains, no persistent storage was created, and no unrelated resource was changed. There was no third allocation.
+## Numerical gates
 
-The corrected 8888/http denial was a provider Cloudflare error 1010 response despite the supplied Jupyter token, rather than evidence of a missing API key or an expired real key. It prevented reaching a usable Jupyter session. No User-Agent/WAF/proxy bypass was attempted. A supported workload connection permitted by the provider/site-owner access policy is needed before another paid experiment. The later missing credential destination is a separate issue, described above; a duplicate API secret is not needed.
-
-The pinned image was `runpod/pytorch:1.4.0-cu1300-torch2120-ubuntu2404` at digest `sha256:93396b43c615b051e3951adbed2f958acff7d645936caa4029a58d0c1d309abd`. Its tag/digest and provider-reported A40 allocation were verified. **Python, PyTorch, CUDA and driver versions inside the GPU container were not observed by remote code.** No GPU accuracy, timing, memory or speedup result is claimed. The existing CPU manifests retain their original zero RunPod costs because those CPU runs were separate.
-
-## CPU, accounting and budget gates
-
-The root task supplied the committed CPU correctness gate at revision `9e415d1c66a922cce2b6d2b5151df38e7e8dd40a`: 367 passing tests and 8 CUDA cases explicitly unrun. Re-run the relevant gate after any numerical change:
-
-```bash
-python -m pytest tests/fwi2d -m 'not cuda' -q
-```
-
-Total expenditure for this entire task must remain **at most USD 10**, including every allocation attempt, compute, setup/download time, disks, retained storage, shutdown latency and metering lag. Reserve **at least USD 2** for overhead/shutdown/storage. Compute allocation must be **at most USD 8 minus already incurred task costs**, reduced further if the reserve is insufficient. This budget does not reset for a retry.
-
-For each attempt, the external controller was armed before creation with a 45-minute maximum wall deadline, a 10-minute startup/setup cutoff, a USD 0.75/hour provider-compute-rate guard and a USD 1 cumulative account-spend guard. The current actual compute quote was USD 0.59/hour. Forty GB of ephemeral disk at the documented USD 0.10/GB/month was bounded conservatively by USD 4/672 hours. A 45-minute compute-plus-disk plan was about USD 0.447; the conservative rate guard plus USD 2 reserve bounded an attempt's envelope at USD 2.567. Attempt 2 additionally reserved USD 0.10 for attempt 1, for USD 2.667 total, below the USD 10 ceiling.
-
-The two actual allocated-to-confirmed-absence durations give a compute-plus-disk estimate of about USD 0.07228. This is an estimate, not a settled bill. Provider credit observations show a USD 0.0623020102 debit; itemized history still returned zero records after more than five minutes and cannot be interpreted as free usage. Keep final settled cost unknown until provider metering resolves.
-
-In general, require:
-
-```text
-confirmed_prior_cost + bounded_fixed_overhead + all_resource_hourly_rate * wall_hours + reserve <= USD 10
-reserve >= USD 2
-compute_allowance <= USD 8 - confirmed_prior_cost
-```
-
-If any term cannot be bounded, do not launch. An account hourly spending limit does not enforce this task's total-dollar ceiling. Metering lag and billing units need explicit allowances. No automatic budget increase, hardware sweep, full Marmousi inversion or extensive Hessian study is covered.
-
-## Supported control-plane and workload transport
-
-GraphQL at `https://api.runpod.io/graphql` and documented API-v2 routes were usable. Read-only routes include `/v2/pods`, `/v2/network-volumes`, `/v2/global-volumes`, `/v2/serverless`, `/v2/clusters`, `/v2/catalog/gpus` and `/v2/billing`; resource-specific Pod billing is `/v2/billing/pods`. Use explicit UTC billing windows and resource IDs to attribute spending. REST-v1 Cloudflare denials are historical and are not required for control when APIv2 works.
-
-APIv2 publishes Pod lifecycle/logging routes, but no command-execution endpoint. Normal SSH requires an actually reachable provider SSH endpoint and verified host key. The first attempt obtained the container host key through authenticated logs, yet the reported direct endpoint refused connections.
-
-The corrected supported HTTP mechanism explicitly exposes 8888/http and enables Jupyter on an official compatible image. `JUPYTER_PASSWORD` is one fresh workload authentication token; it is independent of the provider API credential. Supply it only through the authorization header, never a URL. Use documented Jupyter `PUT /api/contents/{path}` for an encoded archive, `POST /api/kernels`, the kernel channels WebSocket, `GET /api/contents/{path}` to retrieve evidence and `DELETE /api/kernels/{id}`. The client used system CA roots and hostname verification for HTTPS/WSS. A real local server proved upload, execution, archive hashing/extraction, download and kernel cleanup; the cloud 8888 endpoint was denied before an actual kernel WebSocket could be attempted.
-
-The transport proof is separate from GPU validation. Keep provider credentials outside the Pod. Never print request headers, token-bearing URLs, environment dumps, private keys or credential values. Temporary private SSH/workload-token files remain local and are removed after their resources are gone; they are absent from public artifacts.
-
-## Exact pending numerical workloads
-
-These commands were prepared but **not executed on the GPU**. A future permitted workload connection still requires a fresh account/quote/budget check and external controller before allocation:
+The reviewed numerical source is commit
+`abbfe1fa7102580a725990e8de3a241c4874b354`. Its full CPU gate is:
 
 ```bash
-python -c 'import torch; assert torch.cuda.is_available(), "CUDA is required"; assert torch.cuda.device_count() == 1, "one GPU required"; print(torch.__version__, torch.cuda.get_device_name(0))'
-python -m pytest tests/fwi2d -m cuda -q -rs --junitxml=task13-results/cuda-tests.xml
-python benchmarks/fwi2d/solver.py --device cpu --quick --maxiter 120 --output task13-results/solver-cpu-complex128.json
-python benchmarks/fwi2d/solver.py --device cuda --quick --maxiter 120 --output task13-results/solver-cuda-complex128.json
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m pytest tests/fwi2d -m 'not cuda' -q
 ```
 
-Run the CPU comparison before allocation when feasible. Reject any missing/skipped CUDA case; 8 cases were expected from the reviewed revision. The prepared check required zero failures/errors/skips. Complex128 waveform/physical-gradient agreement requires relative error at most 1e-7; complex64 requires waveform at most 1e-3 and physical gradient at most 1e-2 plus its Taylor/inversion gates. Preserve all true residual and float64/complex128 checks; never fall back silently to CPU or lower precision.
+On an actual CUDA device, require the pinned Python 3.12 / PyTorch 2.12.0 release
+and execute:
 
-`--quick` selects the fixed 8 by 12 physical-node, 5 Hz, two-RHS algebraic case with bounded iterations/memory, direct CPU comparison, setup/all-RHS/gradient/exact-HVP timing and residual/memory evidence. Inspect every solve status and accuracy metric; a successful script exit alone is insufficient. The prepared complex128 benchmark check required true relative residual at most 1e-10, waveform/gradient error at most 1e-7 and HVP error at most 1e-5. These are algebraic checks, not full heterogeneous dispersion/PML or inversion validation.
+```bash
+python -c 'import torch; assert torch.cuda.is_available(); assert torch.cuda.device_count() == 1; print(torch.__version__, torch.cuda.get_device_name(0))'
+python -m pytest tests/fwi2d -m cuda -q -rs --junitxml=cuda-tests.xml
+python benchmarks/fwi2d/solver.py --device cpu --quick --maxiter 120 --output solver-cpu.json
+python benchmarks/fwi2d/solver.py --device cuda --quick --maxiter 120 --output solver-cuda.json
+python examples/fwi2d/multiscale_marmousi.py --device cpu --quick --steps 3 --output multiscale-cpu.json
+python examples/fwi2d/multiscale_marmousi.py --device cuda --quick --steps 3 --output multiscale-cuda.json
+```
 
-The reviewed production archive had SHA-256 `c81e13e4ac7c80085b1b0c90c7402ee165ee6e454d918155c147adf4705db084`. Tutorial 01 was separately snapshotted from commit `27142a49ae35464debdf202e4d0e79e7c98669fa`, SHA-256 `d14d232abfd3b7871de190b22c5a7be1b3c0ff155e5df8c34c923994d6c0be1b`; its existing CPU execution is separate from its unrun GPU branch. Full-model task 12 CPU benchmarks are not GPU benchmarks. Preserve dataset/config hashes, SI units/axes, source coverage, solver/PML/dispersion limits and independent-accuracy limitations in any future task 12-derived case.
+Require exactly ten executed CUDA cases with zero failures, errors or skips.
+They cover precision/Taylor and inversion checks, resident multigrid state,
+streamed source memory, pinned-buffer/event recording, and multiscale PML and
+free-surface comparisons against sparse-direct CPU solves. Source-transfer
+collection checks must select the same ten test identities as the full suite.
 
-## Cleanup and evidence
+For the complex128 solver benchmark, require primal true relative residual at
+most 1e-10 and every solve report finite, nonnegative and converged. Each report
+must satisfy either the configured relative tolerance (1e-11) or absolute
+tolerance (1e-13); this is a sufficient check for every right-hand side in a
+batch. Keep the maximum relative residual across all solves as a measured value:
+tiny derivative right-hand sides can meet the absolute tolerance while exceeding
+the relative tolerance. A first batch checker incorrectly rejected that valid
+case; its failed batch and ten successful CUDA tests remain in the history.
 
-The controller ran outside the Pod in a detached local session, monitored account billing and only the exact prechecked task resource name, and terminated immediately after each transport failure. It used `DELETE https://api.runpod.io/v2/pods/{id}` rather than merely stopping compute. Its ownership guard was tested locally with an unrelated mocked resource and never selected that unrelated ID. A controller heartbeat was verified before each allocation. Native provider-scheduled deadlines were not exposed by the inspected schema; the external controller enforced the deadline.
+Require waveform and parameter-gradient relative errors at most 1e-7 and
+exact-HVP relative error at most 1e-5. The benchmark differentiates in
+`theta = log(m / m_reference)`; separate CUDA tests check physical-`m` gradients.
+The Marmousi continuation must run 5×7, 9×13, 9×13
+physical grids at `(2 Hz)`, `(2 Hz)`, `(2, 3 Hz)`, respectively, with three accepted
+steps per stage. Compare all six initial/final stage losses against same-host CPU
+results at relative error at most 1e-7, and require each final loss below its own
+initial loss. Intermediate Adam steps need not decrease monotonically.
 
-A finished Python process does not stop billing. Preserve required result manifests before termination, verify provider 404 and list absence, and verify separately created volumes if any. Here no numerical results existed to retrieve and no persistent volume needed deletion. Final inventory confirmed both task Pods absent and all listed resource classes empty. Saved lifecycle events and account snapshots distinguish confirmed deletion, estimated allocation charges, observed credit debits and unresolved final metering.
+Preserve the primary results before optional notebook execution. Notebook 01
+must retain its original code cells and report actual CUDA execution before its
+GPU branch is described as tested. Algebraic agreement and a short crop inversion
+do not establish continuum accuracy, full Marmousi recovery, high-frequency
+scalability or GPU speedup.
 
-Sources: [RunPod connections](https://docs.runpod.io/pods/connect-to-a-pod), [official container startup contract](https://github.com/runpod/containers/blob/main/container-template/start.sh), [pricing](https://docs.runpod.io/pods/pricing), [billing](https://docs.runpod.io/accounts-billing/billing), [REST APIv2 schema](https://docs.runpod.io/api-reference-v2/openapi.json).
+The final run's maximum CPU/GPU stage-loss difference was 6.2163e-10 relative.
+The quick example took about 1.04 s on CPU and 13.08 s on CUDA, with 17,673,728
+peak allocated CUDA bytes. Each stage reduced data misfit, but final model RMSE
+was 34.84 m/s versus 33.41 m/s for the constant initial model. This experiment
+does not demonstrate improved recovery or faster GPU execution. The separate
+headless GPU notebook artifact contains no embedded plots; the public notebook
+keeps its reviewed CPU illustrations without mixing outputs from different runs.
+
+## Budget and cleanup
+
+The cumulative task ceiling is **USD 10**, including every allocation attempt,
+setup, storage, shutdown delay and metering lag. Reserve **at least USD 2** for
+shutdown and overhead; the budget does not reset between retries. Previously
+attributed charges and unsettled allocations are covered by a conservative
+prior-cost reservation, recorded in each launch envelope.
+
+The planned hardware is one A40, quoted at USD 0.59/hour, with a USD 0.75/hour
+compute guard and 40 GB ephemeral disk. External controllers are armed and their
+heartbeats verified before creation. They enforce a 45-minute wall limit,
+10-minute setup limit, collector liveness, and a conservative USD 1 account-spend
+guard. With USD 0.25 reserved for prior costs and disk conservatively bounded at
+USD 4/672 hours, the maximum launch envelope including the USD 2 reserve is
+about USD 2.817. Recheck actual pricing, prior attributed spending, credit and
+complete inventories before each allocation.
+
+Use only the exact task resource name and acknowledged pod ID for cleanup.
+Durably record an acknowledged ID before accepting a completed create; reconcile
+uncertain outcomes without blindly retrying. Inventory or billing failure must
+not prevent deletion of a known owned pod. On success or failure, retrieve
+available evidence, issue DELETE, confirm GET 404, and verify two complete
+ownership-filtered inventories no longer contain the pod. Ending Python or
+merely stopping compute is insufficient.
+
+Existing user-provided global storage is preserved. These validation launches
+use `mounts={}` and create no persistent volume. Deletion of their pods removes
+their ephemeral disks; it does not imply that all account storage is empty.
+For retained output, follow the [persistent-storage guidance](../../guides/outputs.md#persistent-cloud-storage)
+and account for its separate billing.
+
+## Evidence and accounting
+
+Keep source/dataset/harness hashes, UTC timestamps, actual runtime versions and
+device, JUnit counts, numerical tolerances/errors, stage schedules, timing and
+memory measurements. Keep task-owned pod IDs, rates, deadline/cleanup proof and
+resource-specific billing. Account-wide spending is a conservative guard, not
+attribution of unrelated charges to this task. A zero or incomplete billing
+snapshot does not mean free usage; distinguish observed itemized amounts,
+allocation-time estimates and unresolved settlement.
+
+Do not publish credentials, request headers, private connection details,
+unrelated resource metadata or raw environment dumps. Unknown or unexecuted
+measurements remain explicitly unknown. CPU manifests retain their original CPU
+scope and do not become GPU evidence after a later allocation.
+
+Provider references: [Pod connections](https://docs.runpod.io/pods/connect-to-a-pod),
+[pricing](https://docs.runpod.io/pods/pricing),
+[billing](https://docs.runpod.io/accounts-billing/billing), and
+[API-v2 schema](https://docs.runpod.io/api-reference-v2/openapi.json).

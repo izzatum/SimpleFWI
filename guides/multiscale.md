@@ -117,6 +117,8 @@ Optional factories receive the immutable stage:
 - `configure_runner(index, stage, runner)` attaches a fresh scheduler, recorder
   or accepted-state callbacks before that stage runs. Use distinct archive
   paths such as `stage-000`, `stage-001`: accepted-step counters restart at one.
+  The scheduler must own the current stage optimizer and have no prior history;
+  the hook cannot replace the model, objective, optimizer or source batch size.
   Follow the existing [bounded recording guidance](outputs.md), close owned
   writers in a `finally` block, and avoid retaining runner objects in callbacks.
 
@@ -148,3 +150,57 @@ observations. The coarse-stage residual includes cross-grid discretization
 mismatch; it is not an isolated estimate of that error. The example does not
 establish full Marmousi recovery, high-frequency
 scalability, independent continuum accuracy, or GPU speedup.
+
+## Recorded CPU and CUDA validation
+
+The [CPU validation artifact](../benchmarks/fwi2d/results/multiscale-cpu.json)
+records **463 passed, zero failures/errors/skips, and 10 CUDA tests deselected**
+at source revision `abbfe1f`, using:
+
+```bash
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m pytest tests/fwi2d -m 'not cuda' -q
+```
+
+The suite includes 96 multiscale CPU cases: physical-m transfer, frequency and
+weight selection, independent manual-stage comparisons with Adam/LBFGS,
+free-surface/PML geometry, fresh optimizer/scheduler state, masks, recording
+lifecycle, curvature and failure cleanup. The same artifact contains executed
+quick and default CPU Marmousi crops, refining 5×7 to 9×13 and 9×13 to 17×25
+nodes respectively. Both finish each of their three stages below that stage's
+initial loss; individual Adam steps need not decrease monotonically. These small
+synthetic runs verify the continuation workflow, with the physical and scaling
+limits stated above.
+
+The separate [A40 hardware record](../benchmarks/fwi2d/results/runpod-multiscale.json)
+at the same source revision reports **10 CUDA tests passed, zero failures/errors/
+skips**, using PyTorch 2.12.0+cu130, CUDA 13.0 and driver 580.178.04. Two of those
+tests execute coarse-to-fine Adam continuation with PML and free-surface
+boundaries. They compare resident float64/complex128 waveforms and physical-m
+gradients against CPU direct at a relative tolerance of `1e-7`, as well as stage
+losses and final models. This is evidence for these small discrete fixtures,
+not every optimizer, precision or acquisition.
+
+The executed [GPU Marmousi crop](../benchmarks/fwi2d/results/runpod-multiscale-cuda.json)
+matches its [CPU direct run](../benchmarks/fwi2d/results/runpod-multiscale-cpu.json):
+the maximum relative difference across all six initial/final stage losses is
+`6.22e-10`. GPU losses were:
+
+| Stage | Initial loss | Final loss |
+| --- | ---: | ---: |
+| Coarse 2 Hz | 6.80276434e-4 | 4.74044842e-4 |
+| Fine 2 Hz | 1.03691798e-4 | 1.50567289e-6 |
+| Fine 2/3 Hz | 7.05500578e-6 | 6.55973156e-6 |
+
+Each final loss is below its stage's initial loss, but the first Adam step of
+stage three increases loss. Final velocity RMSE is **34.8429 m/s**, compared with
+**33.4132 m/s** for the initial constant truth-mean model: reducing the data
+objective did not improve model RMSE in this short experiment. This is workflow
+and CPU/GPU numerical parity evidence, not a recovery result.
+
+The matched inversion took **1.03665 s on CPU direct and 13.07533 s on GPU
+FGMRES**, with 17,673,728 peak allocated CUDA bytes. These are single measurements
+on a small crop with short, uncalibrated PML; they show no GPU speedup and establish
+neither large-survey memory scaling nor high-frequency recovery. The separate GPU
+solver benchmark and notebook 01's bounded CUDA comparison also passed, as
+recorded in the hardware manifest. Historical CPU results retain their original
+scope.

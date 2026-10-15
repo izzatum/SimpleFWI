@@ -4,7 +4,9 @@ The reference convention is SI units, `[z, x]` arrays, `exp(-i omega t)`,
 and `A = Delta + omega**2/v**2`. A unit positive point source is scattered
 with `1/(dz*dx)` normalization. Its outgoing two-dimensional field is
 `-i H0^(1)(omega*r/v)/4`; using the opposite sign changes the source.
-All results below use CPU float64 models and complex128 fields.
+The independent physics results below use CPU float64 models and complex128
+fields. The broader implementation suite also includes explicit float32
+parameter and multiscale transfer regressions.
 
 Run the focused scientific gate from the repository root:
 
@@ -144,7 +146,26 @@ checks; independent refined data are required when assessing reconstruction
 accuracy. The present tests establish reference generation, not inversion
 quality or success at every candidate frequency.
 
-## Current CPU evidence, unrun CUDA checks and legacy failures
+## CPU evidence, selected CUDA checks and limits
+
+The [multiscale CPU artifact](../benchmarks/fwi2d/results/multiscale-cpu.json)
+records the current `tests/fwi2d` gate at revision `abbfe1f`: **463 passed, zero
+failures/errors/skips, and 10 CUDA tests deselected**. Reproduce that CPU selection
+with:
+
+```bash
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m pytest tests/fwi2d -m 'not cuda' -q
+```
+
+Its 96 multiscale CPU cases cover node-aligned physical-m refinement, exact
+frequency/weight selection, one physical prior, fresh optimizer/scheduler state,
+explicit masks, free-surface/PML geometry, failure cleanup and final-stage
+curvature. Real PDE Adam/LBFGS runs match independently constructed stage runners.
+The artifact also records three-stage quick/default Marmousi crop examples with
+within-stage loss reduction. Their small grids and uncalibrated short PML do not
+establish independent continuum accuracy, full-model recovery, high-frequency
+scaling or GPU performance. See the [continuation guide](multiscale.md) for the
+physical transfer and schedule contracts.
 
 The [CPU solver manifest](../benchmarks/fwi2d/solver-cpu.json) records direct and
 FGMRES comparisons, including failed-convergence cases. Local iterative timings
@@ -155,20 +176,72 @@ records finite forward data and physical gradients at 2 Hz on the supplied
 independent physical accuracy, reconstruction quality, a highest useful
 frequency, or the information gained from additional sources.
 
-Actual CUDA execution remains unrun. Two subsequent RunPod attempts reached
-provisioned hardware but failed remote execution access: direct SSH was
-unreachable and the explicitly exposed, authenticated Jupyter proxy returned
-Cloudflare error 1010. Both pods were terminated/deleted with provider-confirmed
-absence; no persistent storage remains. The
-[attempt manifest](../benchmarks/fwi2d/results/runpod-attempts.json) records this
-separately from the successful CPU numerical work.
-The eight CUDA-required checks cover four device/precision cases, one allocation
-scaling case, and three pinned-buffer/event recording cases. CPU runs report
-these as skips; they are not passing GPU validation. The
-[RunPod protocol](../benchmarks/fwi2d/runpod_protocol.md) describes the bounded
-hardware validation procedure and records the remote-execution blocker.
+The separate [hardware record](../benchmarks/fwi2d/results/runpod-multiscale.json)
+reports **10 CUDA tests passed, zero failures/errors/skips, in 21.26 s**
+(pytest-reported) at source
+revision `abbfe1f`. The actual device was NVIDIA A40 (`cuda:0`), driver 580.178.04,
+with Python 3.12.3, PyTorch 2.12.0+cu130 and CUDA 13.0. The selected cases cover:
 
-Use `python -m pytest tests/fwi2d -q` for the new implementation's targeted suite.
+- Four precision/Taylor cases, including physical-m waveform/gradient parity,
+  resident multigrid data, and small SGD inversions in float32/complex64 and
+  float64/complex128. The waveform/physical-gradient relative gates are
+  `1e-3`/`1e-2` for complex64 and `1e-7`/`1e-7` for complex128.
+- One bounded allocation-scaling case and three pinned-buffer/event recording
+  cases, including an injected disk-failure cleanup.
+- Two float64/complex128 Adam multiscale comparisons with CPU direct, one with
+  PML and one with a free surface. Resident waveform/physical-m gradient parity
+  must meet `1e-7` relative error, with separate stage-loss and model checks.
+
+Select these tests with `python -m pytest tests/fwi2d -m cuda -q`. Their actual
+execution is separate from the historical 463-pass CPU selection, which
+deselected all ten. The result does not certify all 15 native optimizers on CUDA,
+large surveys, high frequencies or GPU speedup.
+
+The [GPU solver benchmark](../benchmarks/fwi2d/results/runpod-solver-cuda.json)
+also passed against CPU direct on its small complex128 algebraic fixture:
+
+| Quantity | Measured relative value |
+| --- | ---: |
+| Primal residual | 3.2781126e-12 |
+| Waveform error | 4.5576127e-12 |
+| Gradient error in log-m coordinates | 8.0647427e-12 |
+| Exact HVP error in log-m coordinates | 2.6006139e-10 |
+
+The benchmark gradient and exact-Hessian actions use
+`theta = log(m/m_reference)` coordinates. Physical-m parity is established by
+the separate tests above. All eight GPU benchmark solves satisfy their
+configured **relative OR absolute** residual criterion. For tiny derivative
+right-hand sides, the absolute branch can pass despite a larger relative ratio.
+An earlier run stopped because its reporting harness ignored that branch; the
+corrected checker changed no scientific source or numerical tolerances.
+
+The matched [CPU](../benchmarks/fwi2d/results/runpod-multiscale-cpu.json) and
+[GPU](../benchmarks/fwi2d/results/runpod-multiscale-cuda.json) Marmousi crops agree
+within `6.22e-10` relative error across all six initial/final stage losses. Each
+stage's final loss is lower, but stage three's first Adam step raises loss.
+Final velocity RMSE is **34.8429 m/s**, worse than the initial constant truth-mean
+model's **33.4132 m/s**. The data-loss reduction therefore does not demonstrate
+improved recovery. CPU direct took **1.03665 s**, versus **13.07533 s** for GPU
+FGMRES with **17,673,728 peak allocated CUDA bytes**. These single small-crop,
+short-PML measurements show no speedup and do not establish large-scale memory
+behavior, calibrated boundaries or high-frequency accuracy.
+
+Notebook 01's unchanged 11 code cells also executed on A40. Its bounded CUDA
+crop passed the `<1e-7` waveform/data agreement assertions; formatted table values
+of `0.0` are rounding, not exact-zero errors. The supplemental GPU run contains
+no embedded plots, so the public notebooks retain their reviewed CPU figures.
+Notebooks 02 and 03 remain CPU-only execution evidence. See the
+[notebook summary](../benchmarks/fwi2d/results/runpod-notebook-01-summary.json).
+
+The completed test pod was deleted and its absence verified; existing global
+storage was preserved. Earlier
+[access failures](../benchmarks/fwi2d/results/runpod-attempts.json) remain historical
+outcomes. The [RunPod protocol](../benchmarks/fwi2d/runpod_protocol.md) records the
+bounded hardware procedure and cleanup; reported cost estimates remain distinct
+from final provider itemization.
+
+Use `python -m pytest tests/fwi2d -q` for the entire new implementation suite,
+including hardware-required tests when CUDA is available.
 The legacy full-repository pytest run still aborts during collection: the
 unbounded BB script performs work on import and encounters a singular
 factorization, while stale scripts import the removed `simplefwi.core_v2` module.

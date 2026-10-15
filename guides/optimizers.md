@@ -47,8 +47,9 @@ optimizer owns exactly the model parameters.
 
 Unspecified optional flags use native defaults. Muon requires a matrix, which
 is why the default `theta` parameter retains [z,x] shape. CPU float64 default
-routes are tested; fused, foreach, CUDA and mixed-precision variants are not
-certified by this table. `capturable=True` and `differentiable=True` steps are
+routes are tested; this table does not certify fused, foreach, mixed-precision
+or all-optimizer CUDA variants. Selected SGD and Adam CUDA tests are described
+below. `capturable=True` and `differentiable=True` steps are
 explicitly rejected: this runner uses Python solver/control flow and detached
 batch gradient accumulation.
 
@@ -116,6 +117,46 @@ writer failures propagate. A restart must restore model/optimizer/scheduler
 state, RNGs and `runner.accepted_steps`; see [output and restart guidance](outputs.md).
 Use `capture_checkpoint(..., accepted_step=result.accepted_step, ...)` after
 a successful outer step, never inside its closure.
+
+## Continuation across grids and frequencies
+
+[`MultiscaleInversion`](multiscale.md) constructs a new `VelocityParameters`,
+objective and native optimizer for every declared stage. Pass
+`optimizer_factory(model, stage)`, for example
+`lambda model, stage: make_optimizer('Adam', model, lr=.03)`.
+All 15 recipes above can initialize each stage; SparseAdam additionally needs a
+`model_factory(velocity, stage)` that supplies the sparse representation and,
+when cells are frozen, an explicit target-grid mask. The bounded physical model
+crosses stages; Adam moments, L-BFGS history, theta and categorical masks do not.
+
+Factories must return fresh optimizers bound exactly to the new model.
+Accumulated state and reused optimizer identities are rejected. Native
+Adagrad's constructor-created zero-step accumulator is allowed, including its
+configured `initial_accumulator_value`; it is not transferred optimizer history.
+Attach a fresh scheduler through `configure_runner(index, stage, runner)`.
+Ownership and history are checked after this hook, including children of native
+chained/sequential schedulers. Native initial epoch zero is valid; a scheduler
+from an earlier stage or another optimizer is rejected. The hook may attach
+recorders and callable accepted-state callbacks but cannot replace the stage's
+model, objective, optimizer or source batch size. Use distinct recording paths
+because accepted-step counters restart at one per stage.
+
+The [CPU continuation record](../benchmarks/fwi2d/results/multiscale-cpu.json)
+reports **463 passed and 10 CUDA tests deselected** for the full `tests/fwi2d`
+CPU selection, with zero failures/errors/skips. Its 96 multiscale CPU cases
+include every recipe's fresh initialization, actual multi-stage Adam/LBFGS
+comparisons against manual runners, sparse masks and scheduler lifecycle checks.
+The separate [A40 record](../benchmarks/fwi2d/results/runpod-multiscale.json),
+at source revision `abbfe1f`, reports all ten selected CUDA tests passed with
+zero failures/errors/skips on PyTorch 2.12.0+cu130. Optimizer coverage is small
+SGD inversions in float32/64 and float64 Adam multiscale parity against CPU direct,
+including PML and free-surface stages. It does not establish GPU compatibility
+for all 15 recipes, fused/foreach flags, or convergence on other objectives.
+The completed GPU solver benchmark and three-stage Adam Marmousi example add
+evidence for their stated configurations. The short example reduces each stage's
+final objective but includes an increasing Adam step and a worse final model RMSE
+than its initial constant model. See the [measured continuation results](multiscale.md).
+No optimizer ranking, large-scale reconstruction or GPU speedup follows.
 
 ## Measured PDE integration
 

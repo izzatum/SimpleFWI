@@ -1,0 +1,640 @@
+{
+  "schema_version": 1,
+  "source_revision": "abbfe1fa7102580a725990e8de3a241c4874b354",
+  "status": "passed",
+  "gpu_validation": "executed",
+  "cuda_tests_expected": 10,
+  "cuda_tests_executed": 10,
+  "create_requests": [
+    {
+      "create_payload_bytes": 660244,
+      "http_status": 413,
+      "resource_name": "simplefwi-multiscale-d58043ac0c2d429f",
+      "source_archive_sha256": "4d80e9b74286caccff0f7798317079971371aa63b536ee61f23b9e2a6aa08f12",
+      "create_started_at_utc": "2026-10-15T16:38:48.278914+00:00",
+      "owned_pod_ids": [],
+      "new_paid_allocation": false,
+      "cleanup_status": "provider_confirmed_deleted",
+      "consecutive_task_inventory_absence_checks": 2,
+      "absence_confirmed_at_utc": "2026-10-15T16:40:02.818673+00:00"
+    },
+    {
+      "create_payload_bytes": 205889,
+      "http_status": 413,
+      "resource_name": "simplefwi-multiscale-78902f23028a43f5",
+      "source_archive_sha256": "7ad93cd283e50e0f4ee1f9ac4e739ac23c2d221091a26f5e4465cd87d2038179",
+      "create_started_at_utc": "2026-10-15T16:44:25.272883+00:00",
+      "owned_pod_ids": [],
+      "new_paid_allocation": false,
+      "cleanup_status": "provider_confirmed_deleted",
+      "consecutive_task_inventory_absence_checks": 2,
+      "absence_confirmed_at_utc": "2026-10-15T16:44:28.000137+00:00"
+    },
+    {
+      "create_payload_bytes": 98017,
+      "http_status": 413,
+      "resource_name": "simplefwi-multiscale-68fe2ecf0e994580",
+      "source_archive_sha256": "5ce8332544c946cc5026d96b8e33aba0c6139d8c71182d15819764562370f888",
+      "create_started_at_utc": "2026-10-15T16:53:15.828790+00:00",
+      "owned_pod_ids": [],
+      "new_paid_allocation": false,
+      "cleanup_status": "provider_confirmed_deleted",
+      "consecutive_task_inventory_absence_checks": 2,
+      "absence_confirmed_at_utc": "2026-10-15T16:53:18.409017+00:00"
+    }
+  ],
+  "offline_source_validation": {
+    "collection": "10/473 tests collected (463 deselected)",
+    "all133_source_files_match_immutable_reviewed_commit": true,
+    "cuda_node_ids_equal_prior_reviewed_selection": true,
+    "controller_protocol_fault_tests_passed": 16,
+    "remaining_postprocessor_schema_tests_passed": 7,
+    "synthetic_tests_are_not_gpu_execution_evidence": true,
+    "inherited_key_removal_and_real_venv_bootstrap_regression_passed": true
+  },
+  "resources": {
+    "new_paid_allocations": 4,
+    "new_pod_ids": [
+      "w52rhut8joweyj",
+      "6qa8xc1ya4qfid",
+      "1va2aodjwhgq8y",
+      "ft988jgtdbytlt"
+    ],
+    "current_pod_inventory": {
+      "http_status": 200,
+      "count": 0,
+      "pagination_complete": true
+    },
+    "all_historical_task_pods_get_http_status": 404,
+    "task_persistent_volumes_created": false,
+    "task_network_volumes_created": false,
+    "historical_task_ephemeral_disks_deleted_with_pods": true,
+    "unrelated_resources_untouched": true,
+    "all_new_task_pods_deleted": true,
+    "all6_owned_pods_get_http_status": 404,
+    "current_account_gpu_rate_usd_per_hour": 0,
+    "task_global_volumes_created": false,
+    "provided_global_storage_preserved": true
+  },
+  "billing": {
+    "historical_owned_pods": [
+      {
+        "pod_id": "144hxuu5czqg3h",
+        "get_http_status": 404,
+        "billing_http_status": 200,
+        "itemized_totals": {
+          "cpuAmount": 0,
+          "diskAmount": 0.00046296301297843456,
+          "gpuAmount": 0.06183904595673084,
+          "totalAmount": 0.06230200896970928
+        }
+      },
+      {
+        "pod_id": "qzu87v7wplhu0d",
+        "get_http_status": 404,
+        "billing_http_status": 200,
+        "itemized_totals": {
+          "cpuAmount": 0,
+          "diskAmount": 0,
+          "gpuAmount": 0.007441866677254438,
+          "totalAmount": 0.007441866677254438
+        }
+      }
+    ],
+    "observed_owned_id_total_usd": 0.09630616777576506,
+    "snapshot_utc": "2026-10-15T18:12:34.158441+00:00",
+    "provider_settlement_finality": "not independently guaranteed",
+    "new_create_rejections_allocated_no_resource": true,
+    "total_task_budget_usd": 10,
+    "shutdown_reserve_usd": 2,
+    "conservative_prior_cost_reservation_usd": 0.25,
+    "account_aggregate_not_used_for_task_attribution": true,
+    "estimated_cumulative_owned_cost_usd": 0.2183671400943182,
+    "owned_pod_itemization": [
+      {
+        "pod_id": "144hxuu5czqg3h",
+        "get_http_status": 404,
+        "billing_http_status": 200,
+        "itemized_totals": {
+          "cpuAmount": 0,
+          "diskAmount": 0.00046296301297843456,
+          "gpuAmount": 0.06183904595673084,
+          "totalAmount": 0.06230200896970928
+        }
+      },
+      {
+        "pod_id": "qzu87v7wplhu0d",
+        "get_http_status": 404,
+        "billing_http_status": 200,
+        "itemized_totals": {
+          "cpuAmount": 0,
+          "diskAmount": 0,
+          "gpuAmount": 0.007441866677254438,
+          "totalAmount": 0.007441866677254438
+        }
+      },
+      {
+        "pod_id": "w52rhut8joweyj",
+        "get_http_status": 404,
+        "billing_http_status": 200,
+        "itemized_totals": {
+          "cpuAmount": 0,
+          "diskAmount": 0,
+          "gpuAmount": 0.026562292128801346,
+          "totalAmount": 0.026562292128801346
+        }
+      },
+      {
+        "pod_id": "6qa8xc1ya4qfid",
+        "get_http_status": 404,
+        "billing_http_status": 200,
+        "itemized_totals": {
+          "cpuAmount": 0,
+          "diskAmount": 0,
+          "gpuAmount": 0,
+          "totalAmount": 0
+        }
+      },
+      {
+        "pod_id": "1va2aodjwhgq8y",
+        "get_http_status": 404,
+        "billing_http_status": 200,
+        "itemized_totals": {
+          "cpuAmount": 0,
+          "diskAmount": 0,
+          "gpuAmount": 0,
+          "totalAmount": 0
+        }
+      },
+      {
+        "pod_id": "ft988jgtdbytlt",
+        "get_http_status": 404,
+        "billing_http_status": 200,
+        "itemized_totals": {
+          "cpuAmount": 0,
+          "diskAmount": 0,
+          "gpuAmount": 0,
+          "totalAmount": 0
+        }
+      }
+    ],
+    "conservative_estimate_includes_unsettled_compute_and_disk": true,
+    "settlement": "Recent zero itemizations are pending and do not imply free allocations. Conservative estimates cover known allocation durations; provider finality is not independently guaranteed."
+  },
+  "reported_at_utc": "2026-10-15T18:12:34.158441+00:00",
+  "execution_attempts": [
+    {
+      "create_payload_bytes": 10780,
+      "pod_id": "w52rhut8joweyj",
+      "resource_name": "simplefwi-multiscale-cebf998eb3a44cb7",
+      "created_at_utc": "2026-10-15T17:00:39.208Z",
+      "deleted_at_utc": "2026-10-15T17:03:23.673722+00:00",
+      "allocation_wall_seconds": 164.465722,
+      "compute_usd_per_hour": 0.59,
+      "container_disk_gb": 40,
+      "mounts": {},
+      "image": "runpod/pytorch:1.4.0-cu1300-torch2120-ubuntu2404@sha256:93396b43c615b051e3951adbed2f958acff7d645936caa4029a58d0c1d309abd",
+      "source_archive_url": "https://codeload.github.com/izzatum/SimpleFWI/tar.gz/abbfe1fa7102580a725990e8de3a241c4874b354",
+      "source_archive_sha256": "0a3ce24e05fd3f1c37d151ccd9b6168b70bb2c3bb61d6a67b5516856575f508c",
+      "source_download_started": false,
+      "gpu_execution": false,
+      "runtime_software_versions_observed": false,
+      "credential_values_inspected": false,
+      "provider_credential_in_request_env": false,
+      "cleanup": {
+        "status": "provider_confirmed_deleted",
+        "get_http_status": 404,
+        "task_inventory_absence_checks": 2,
+        "task_persistent_volumes_created": false,
+        "unrelated_resources_untouched": true
+      },
+      "cost": {
+        "estimated_compute_and_disk_usd": 0.027226038503042324,
+        "observed_itemized_amount_usd": 0,
+        "itemized_snapshot_utc": "2026-10-15T17:04:22.600552+00:00",
+        "settlement": "pending; zero snapshot does not imply free allocation"
+      }
+    },
+    {
+      "pod_id": "6qa8xc1ya4qfid",
+      "created_at_utc": "2026-10-15T17:46:23.351Z",
+      "deleted_at_utc": "2026-10-15T17:49:03.201691+00:00",
+      "status": "dependency_setup_failed",
+      "failure": "Global pip could not uninstall Debian-managed pyparsing3.1.1 because its RECORD file is absent. No CUDA scientific tests ran.",
+      "runtime_smoke_passed": true,
+      "runtime": {
+        "python": "3.12.3",
+        "torch": "2.12.0+cu130",
+        "torch_cuda_build": "13.0",
+        "cuda_available": true,
+        "cuda_device_count": 1,
+        "provider_key_env_absent": true,
+        "cuda_current_device": 0,
+        "actual_tensor_device": "cuda:0",
+        "gpu_name": "NVIDIA A40",
+        "gpu_total_memory_bytes": 50897289216,
+        "gpu_compute_capability": [
+          8,
+          6
+        ],
+        "driver": "580.178.04"
+      },
+      "cuda_tests_executed": 0,
+      "failed_command": {
+        "name": "dependency-install",
+        "command": [
+          "/usr/local/bin/python",
+          "-m",
+          "pip",
+          "install",
+          "--disable-pip-version-check",
+          "--no-input",
+          "-r",
+          "requirements/fwi2d-py312.lock"
+        ],
+        "timeout_seconds": 360,
+        "timed_out": false,
+        "exit_code": 1,
+        "elapsed_seconds": 6.07513945014216,
+        "log_file": "dependency-install.log",
+        "optional": false
+      },
+      "cleanup": {
+        "status": "provider_confirmed_deleted",
+        "get_http_status": 404,
+        "task_inventory_absence_checks": 2,
+        "task_persistent_volumes_created": false,
+        "unrelated_resources_untouched": true
+      },
+      "estimated_compute_and_disk_usd": 0.026462055527314815,
+      "provider_billing_settlement": "pending; zero recent snapshot does not imply free allocation"
+    },
+    {
+      "pod_id": "1va2aodjwhgq8y",
+      "created_at_utc": "2026-10-15T17:55:20.913Z",
+      "deleted_at_utc": "2026-10-15T17:59:34.423163+00:00",
+      "status": "cuda_tests_passed_benchmark_harness_contract_mismatch",
+      "runtime_smoke_passed": true,
+      "runtime": {
+        "python": "3.12.3",
+        "torch": "2.12.0+cu130",
+        "torch_cuda_build": "13.0",
+        "cuda_available": true,
+        "cuda_device_count": 1,
+        "provider_key_env_absent": true,
+        "python_executable": "/workspace/fwi-task13/.task13-venv/bin/python",
+        "python_prefix": "/workspace/fwi-task13/.task13-venv",
+        "python_base_prefix": "/usr",
+        "torch_module_path": "/usr/local/lib/python3.12/dist-packages/torch/__init__.py",
+        "cuda_current_device": 0,
+        "actual_tensor_device": "cuda:0",
+        "gpu_name": "NVIDIA A40",
+        "gpu_total_memory_bytes": 47697690624,
+        "gpu_compute_capability": [
+          8,
+          6
+        ],
+        "driver": "580.159.04"
+      },
+      "venv_bootstrap": {
+        "venv_creation_exit_code": 0,
+        "venv_verification_exit_code": 0,
+        "venv_prefix": "/workspace/fwi-task13/.task13-venv",
+        "venv_python": "/workspace/fwi-task13/.task13-venv/bin/python",
+        "system_site_packages": true,
+        "elapsed_seconds": 3.305469195358455
+      },
+      "cuda_test_summary": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "cuda_test_seconds": 25.533911942504346,
+      "artifacts": {
+        "cuda-tests.xml": {
+          "bytes": 1616,
+          "sha256": "97da00f48eb420def752c0c2e2813f592e0bcf6517c6f7e5b4ee9c6745ae001f"
+        },
+        "runtime-after-install.json": {
+          "bytes": 620,
+          "sha256": "c1b6484228146ce5d11b2323a03d486dd3bd2cbd6c8b1263f1b6ec78c50a7bcf"
+        },
+        "solver-cpu-complex128.json": {
+          "bytes": 10557,
+          "sha256": "bbd522cd0d955dcdcfeb9c76a99c07520474b96fce03e765eb7c1bd75005ea33"
+        }
+      },
+      "failure": "Harness incorrectly applied a1e-10 relative-only limit to maximum over primal and tiny derivative RHS solves. Committed solver permits configured absolute tolerance; scientific CUDA tests and CPU benchmark accuracy passed. GPU benchmark, multiscale example and notebook were not reached.",
+      "cpu_benchmark": {
+        "status": "passed",
+        "primal_relative_residual": 3.278161103775394e-12,
+        "maximum_all_solve_relative_residual": 4.143970054623923e-09,
+        "configured_rtol": 1e-11,
+        "configured_atol": 1e-13,
+        "waveform_relative_error": 4.5577705041350975e-12,
+        "gradient_relative_error": 8.064664019695723e-12,
+        "hvp_relative_error": 2.6006151561708295e-10
+      },
+      "cleanup": {
+        "status": "provider_confirmed_deleted",
+        "get_http_status": 404,
+        "task_inventory_absence_checks": 2,
+        "task_persistent_volumes_created": false,
+        "unrelated_resources_untouched": true
+      },
+      "estimated_compute_and_disk_usd": 0.041966662565410054,
+      "provider_billing_settlement": "pending"
+    },
+    {
+      "pod_id": "ft988jgtdbytlt",
+      "resource_name": "simplefwi-multiscale-c69f6b31c74242b2",
+      "created_at_utc": "2026-10-15T18:05:57.556Z",
+      "result_received_at_utc": "2026-10-15T18:11:14.766963+00:00",
+      "deleted_at_utc": "2026-10-15T18:11:17.525572+00:00",
+      "allocation_wall_seconds": 319.969572,
+      "status": "passed",
+      "compute_usd_per_hour": 0.59,
+      "container_disk_gb": 40,
+      "mounts": {},
+      "cuda_test_summary": {
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "runtime_artifact": "runpod-runtime.json",
+      "benchmark_validation": {
+        "cpu": {
+          "primal_relative_residual": 3.278161103775394e-12,
+          "maximum_all_solve_relative_residual": 4.143970054623923e-09,
+          "waveform_relative_error": 4.5577705041350975e-12,
+          "gradient_relative_error": 8.064664019695723e-12,
+          "hvp_relative_error": 2.6006151561708295e-10
+        },
+        "cuda": {
+          "primal_relative_residual": 3.2781126076067117e-12,
+          "maximum_all_solve_relative_residual": 4.1439696865464376e-09,
+          "waveform_relative_error": 4.557612734573137e-12,
+          "gradient_relative_error": 8.064742651332927e-12,
+          "hvp_relative_error": 2.600613861489685e-10
+        }
+      },
+      "multiscale_cpu_gpu_comparison": {
+        "stage_loss_relative_errors": [
+          2.9888391818468386e-11,
+          1.7295276930754767e-11,
+          4.735002793288392e-12,
+          2.975066231213941e-10,
+          2.5335232966082126e-10,
+          6.216299922421705e-10
+        ],
+        "maximum_stage_loss_relative_error": 6.216299922421705e-10
+      },
+      "notebook_status": "passed",
+      "cleanup": {
+        "status": "provider_confirmed_deleted",
+        "get_http_status": 404,
+        "task_inventory_absence_checks": 2,
+        "task_persistent_volumes_created": false,
+        "unrelated_resources_untouched": true
+      },
+      "estimated_compute_and_disk_usd": 0.0529685078515873,
+      "provider_billing_settlement": "pending recent itemization"
+    }
+  ],
+  "cuda_test_summary": {
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "historical_slim_transfer": {
+    "compression": "xz",
+    "encoding": "base85",
+    "source_archive_sha256": "5ce8332544c946cc5026d96b8e33aba0c6139d8c71182d15819764562370f888",
+    "public_blob_fetches": 5,
+    "all_fetched_bytes_match_reviewed_git_blobs": true,
+    "dataset_sha256": "6756a104e3e5eb641ba4ba05c7fb983978e13c9885fac87c4909e51a79cad572",
+    "optional_notebook_included": false
+  },
+  "source_archive": {
+    "url": "https://codeload.github.com/izzatum/SimpleFWI/tar.gz/abbfe1fa7102580a725990e8de3a241c4874b354",
+    "bytes": 4512927,
+    "sha256": "0a3ce24e05fd3f1c37d151ccd9b6168b70bb2c3bb61d6a67b5516856575f508c"
+  },
+  "harness_sha256": "9498500ad4f56e6e3f36fe643b0b1dfe7e75ffe15dd8bdd5f82fe1dd9cd5cdea",
+  "dataset_sha256": "6756a104e3e5eb641ba4ba05c7fb983978e13c9885fac87c4909e51a79cad572",
+  "final_successful_pod_id": "ft988jgtdbytlt",
+  "final_successful_run": {
+    "pod_id": "ft988jgtdbytlt",
+    "resource_name": "simplefwi-multiscale-c69f6b31c74242b2",
+    "created_at_utc": "2026-10-15T18:05:57.556Z",
+    "result_received_at_utc": "2026-10-15T18:11:14.766963+00:00",
+    "deleted_at_utc": "2026-10-15T18:11:17.525572+00:00",
+    "allocation_wall_seconds": 319.969572,
+    "status": "passed",
+    "compute_usd_per_hour": 0.59,
+    "container_disk_gb": 40,
+    "mounts": {},
+    "cuda_test_summary": {
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "runtime_artifact": "runpod-runtime.json",
+    "benchmark_validation": {
+      "cpu": {
+        "primal_relative_residual": 3.278161103775394e-12,
+        "maximum_all_solve_relative_residual": 4.143970054623923e-09,
+        "waveform_relative_error": 4.5577705041350975e-12,
+        "gradient_relative_error": 8.064664019695723e-12,
+        "hvp_relative_error": 2.6006151561708295e-10
+      },
+      "cuda": {
+        "primal_relative_residual": 3.2781126076067117e-12,
+        "maximum_all_solve_relative_residual": 4.1439696865464376e-09,
+        "waveform_relative_error": 4.557612734573137e-12,
+        "gradient_relative_error": 8.064742651332927e-12,
+        "hvp_relative_error": 2.600613861489685e-10
+      }
+    },
+    "multiscale_cpu_gpu_comparison": {
+      "stage_loss_relative_errors": [
+        2.9888391818468386e-11,
+        1.7295276930754767e-11,
+        4.735002793288392e-12,
+        2.975066231213941e-10,
+        2.5335232966082126e-10,
+        6.216299922421705e-10
+      ],
+      "maximum_stage_loss_relative_error": 6.216299922421705e-10
+    },
+    "notebook_status": "passed",
+    "cleanup": {
+      "status": "provider_confirmed_deleted",
+      "get_http_status": 404,
+      "task_inventory_absence_checks": 2,
+      "task_persistent_volumes_created": false,
+      "unrelated_resources_untouched": true
+    },
+    "estimated_compute_and_disk_usd": 0.0529685078515873,
+    "provider_billing_settlement": "pending recent itemization"
+  },
+  "artifacts": {
+    "runpod-cuda-tests.xml": {
+      "bytes": 1616,
+      "sha256": "d50f29cbe63d3785237cfa83b16e61ded69935126c862610c2a8bba94955962f"
+    },
+    "runpod-runtime.json": {
+      "bytes": 620,
+      "sha256": "e323b92dd994a61e5db2798176d2e79a6b42605098b183f6c8d8099994888f46"
+    },
+    "runpod-solver-cpu.json": {
+      "bytes": 10556,
+      "sha256": "ad16ae23702137a5ed6526ba36776ff4e1a0028e89802c102325c80333709d19"
+    },
+    "runpod-solver-cuda.json": {
+      "bytes": 10560,
+      "sha256": "2af275cbc897cc5e4fe3d293fc4220d50c9362c7a471e355b750c16a45b9008f"
+    },
+    "runpod-multiscale-cpu.json": {
+      "bytes": 2930,
+      "sha256": "f4b8a8ac71c98df07cd3d6c90b333f7fb043ead4da19952ec438c106fd576ae5"
+    },
+    "runpod-multiscale-cuda.json": {
+      "bytes": 2948,
+      "sha256": "9355379eeeec76440dbe57e1b5c87601e715fbfadd2a66881711e5f9fb4ed717"
+    },
+    "runpod-notebook-01-summary.json": {
+      "bytes": 1241,
+      "sha256": "fced6b2870b2657120756947bc9dd9508683e28491fc15ab8912b16e6bbe1fb5"
+    },
+    "runpod-notebook-01.ipynb.gz": {
+      "bytes": 11618,
+      "sha256": "fc847c2c6a21d168bf46c727dca4d439dd57d4fe69810b0928e06faf4c680460"
+    }
+  },
+  "commands": [
+    {
+      "name": "dependency-install",
+      "exit_code": 0,
+      "timed_out": false,
+      "elapsed_seconds": 24.422233587829396,
+      "optional": false
+    },
+    {
+      "name": "dependency-check",
+      "exit_code": 0,
+      "timed_out": false,
+      "elapsed_seconds": 3.2724716579541564,
+      "optional": false
+    },
+    {
+      "name": "cuda-tests",
+      "exit_code": 0,
+      "timed_out": false,
+      "elapsed_seconds": 22.714666237821802,
+      "optional": false
+    },
+    {
+      "name": "solver-cpu",
+      "exit_code": 0,
+      "timed_out": false,
+      "elapsed_seconds": 4.425455541117117,
+      "optional": false
+    },
+    {
+      "name": "solver-cuda",
+      "exit_code": 0,
+      "timed_out": false,
+      "elapsed_seconds": 6.931435211095959,
+      "optional": false
+    },
+    {
+      "name": "multiscale-cpu",
+      "exit_code": 0,
+      "timed_out": false,
+      "elapsed_seconds": 3.5735993180423975,
+      "optional": false
+    },
+    {
+      "name": "multiscale-cuda",
+      "exit_code": 0,
+      "timed_out": false,
+      "elapsed_seconds": 16.94459257996641,
+      "optional": false
+    },
+    {
+      "name": "optional-notebook-dependencies",
+      "exit_code": 0,
+      "timed_out": false,
+      "elapsed_seconds": 2.520792172057554,
+      "optional": true
+    },
+    {
+      "name": "optional-notebook-kernel",
+      "exit_code": 0,
+      "timed_out": false,
+      "elapsed_seconds": 0.2654026139061898,
+      "optional": true
+    },
+    {
+      "name": "optional-notebook",
+      "exit_code": 0,
+      "timed_out": false,
+      "elapsed_seconds": 10.942287696991116,
+      "optional": true
+    }
+  ],
+  "benchmark_validation": {
+    "cpu": {
+      "primal_relative_residual": 3.278161103775394e-12,
+      "maximum_all_solve_relative_residual": 4.143970054623923e-09,
+      "waveform_relative_error": 4.5577705041350975e-12,
+      "gradient_relative_error": 8.064664019695723e-12,
+      "hvp_relative_error": 2.6006151561708295e-10
+    },
+    "cuda": {
+      "primal_relative_residual": 3.2781126076067117e-12,
+      "maximum_all_solve_relative_residual": 4.1439696865464376e-09,
+      "waveform_relative_error": 4.557612734573137e-12,
+      "gradient_relative_error": 8.064742651332927e-12,
+      "hvp_relative_error": 2.600613861489685e-10
+    }
+  },
+  "multiscale_cpu_gpu_comparison": {
+    "stage_loss_relative_errors": [
+      2.9888391818468386e-11,
+      1.7295276930754767e-11,
+      4.735002793288392e-12,
+      2.975066231213941e-10,
+      2.5335232966082126e-10,
+      6.216299922421705e-10
+    ],
+    "maximum_stage_loss_relative_error": 6.216299922421705e-10
+  },
+  "notebook": {
+    "status": "passed",
+    "artifact": "runpod-notebook-01.ipynb.gz",
+    "summary_artifact": "runpod-notebook-01-summary.json",
+    "executed_notebook_sha256": "4d675b4cdd69d1b116b2574816c9cf761cee5438e775c7abd66bf5e45cf71664",
+    "source_code_sha256": "39d896133332fe8523aac8d9368299bedcd8069aa2c79ddf44a57040b916224a",
+    "code_cells_executed": 11,
+    "total_cells": 22,
+    "embedded_figure_count": 0,
+    "publication_note": "The supplemental headless GPU execution contains numerical outputs and tables; the main tutorial retains separately executed CPU figures. Outputs are not mixed."
+  },
+  "scientific_scope": {
+    "fixture": "9x13 Marmousi crop;5x7 to9x13 resolution transfer;2Hz to2+3Hz frequency continuation;3Adam steps perstage",
+    "all_gpu_stage_final_losses_below_initial": true,
+    "maximum_cpu_gpu_stage_loss_relative_error": 6.216299922421705e-10,
+    "initial_constant_model_velocity_rmse_m_s": 33.4132491153389,
+    "final_gpu_velocity_rmse_m_s": 34.84289076157659,
+    "velocity_recovery_improved": false,
+    "gpu_speedup_claim": false,
+    "independent_full_model_accuracy": "unrun",
+    "pml_reflection_calibration": "unrun"
+  }
+}

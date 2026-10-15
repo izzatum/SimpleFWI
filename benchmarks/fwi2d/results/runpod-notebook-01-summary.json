@@ -1,0 +1,29 @@
+{
+  "status": "passed",
+  "elapsed_seconds": 9.381230335915461,
+  "executed_notebook_bytes": 46126,
+  "executed_notebook_sha256": "4d675b4cdd69d1b116b2574816c9cf761cee5438e775c7abd66bf5e45cf71664",
+  "kernel_executable": "/workspace/fwi-task13/.task13-venv/bin/python",
+  "notebook_code_sha256": "39d896133332fe8523aac8d9368299bedcd8069aa2c79ddf44a57040b916224a",
+  "summary": {
+    "dataset_sha256": "6756a104e3e5eb641ba4ba05c7fb983978e13c9885fac87c4909e51a79cad572",
+    "full_model_shape": [
+      121,
+      373
+    ],
+    "frequency_hz": 2.0,
+    "top_boundary": "pml",
+    "full_model_source_count": 5,
+    "full_model_receiver_count": 371,
+    "full_model_cpu_forward_seconds": 0.9915547480341047,
+    "local_dispersion_screen_passed": true,
+    "full_model_recomputed_relative_residual": 1.3488139912258378e-14,
+    "full_model_selected_sampler_relative_error": 0.0,
+    "crop_cpu_fgmres_wavefield_relative_error": 7.417107353544052e-11,
+    "crop_cpu_fgmres_data_relative_error": 4.2922417985391524e-11,
+    "cuda_status": "passed: bounded crop residual and CPU agreement",
+    "independent_full_model_accuracy": "unrun",
+    "full_model_pml_reflection_calibration": "unrun",
+    "notebook_elapsed_seconds": 5.127626921981573
+  }
+}

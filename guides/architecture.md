@@ -37,8 +37,15 @@ The direct solver assembles a sparse CPU reference system and uses bounded
 factor caches; matrix-free here describes iterative operator/Hessian actions,
 not a promise that direct factorization allocates no matrix. FGMRES uses a
 shifted-Helmholtz multigrid preconditioner and true unpreconditioned residual
-acceptance. It has CPU tests but can fail at higher frequencies; actual CUDA
-execution is unrun. No implicit device or precision fallback is supported.
+acceptance. CPU checks and ten selected CUDA tests have passed, the latter on
+an NVIDIA A40 with PyTorch 2.12.0+cu130; see the
+[hardware record](../benchmarks/fwi2d/results/runpod-multiscale.json).
+This includes waveform/physical-gradient comparisons, small SGD inversions and
+Adam multiscale parity. A small GPU solver benchmark, three-stage Marmousi crop
+and notebook 01's bounded CUDA comparison also passed. FGMRES remains
+experimental and can fail at higher frequencies; the measured small GPU
+workflow was slower than CPU direct. No large-scale speedup is established.
+No implicit device or precision fallback is supported.
 
 `VelocityParameters` maps bounded native parameters to physical velocity.
 `InversionRunner` accumulates streamed physical gradients and applies one
@@ -60,7 +67,8 @@ positive precision requirements, probes, and interpretation limits.
 checkpoints to accepted outer steps. It can recompute the accepted-state gradient;
 a closure's last gradient may instead belong to a line-search trial. Simulation
 wavefields use separate selected archives. CPU recording uses bounded buffers;
-CUDA recording uses bounded pinned buffers and transfer events, but actual-device
-checks remain unrun. See [output/restart](outputs.md) for
+CUDA recording uses bounded pinned buffers and transfer events. Three actual A40
+tests passed for selected noncontiguous transfers, bounded slot/event reuse and
+disk-failure draining. See [output/restart](outputs.md) for
 metadata, identities, writer failure behavior, and storage limits. Stored data,
 optimizer state, and sparse factors remain separate memory costs.

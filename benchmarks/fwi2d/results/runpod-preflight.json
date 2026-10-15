@@ -193,5 +193,11 @@
   "attempt_evidence": "runpod-attempts.json",
   "final_provider_snapshot_utc": "2026-10-15T15:16:11.168947+00:00",
   "credit_sufficient_for_budget": null,
-  "latest_retry_evidence": "runpod-retry.json"
+  "latest_retry_evidence": "runpod-retry.json",
+  "current_state_pointer": {
+    "recorded_at_utc": "2026-10-15T18:12:34.158441+00:00",
+    "status": "gpu_validation_passed_task_pods_terminated",
+    "manifest": "runpod-multiscale.json",
+    "note": "Earlier observations below are historical. Current API access, actual GPU execution, owned resource cleanup and costs are recorded in the linked manifest."
+  }
 }

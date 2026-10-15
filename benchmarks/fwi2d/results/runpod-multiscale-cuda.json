@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "experiment": "marmousi_multiscale_crop",
+  "validation_scope": "synthetic integration; short PML not independently calibrated",
+  "device": "cuda",
+  "torch_version": "2.12.0+cu130",
+  "cuda_version": "13.0",
+  "gpu_name": "NVIDIA A40",
+  "dtype": "torch.complex128",
+  "dataset": {
+    "path": "data/marmousi.mat",
+    "velocity_unit": "m/s",
+    "sha256": "6756a104e3e5eb641ba4ba05c7fb983978e13c9885fac87c4909e51a79cad572"
+  },
+  "crop_velocity_sha256": "71e2acfafb3afca3400537d239e1c65642d534db97473ab6cb0cb20b85140181",
+  "origin_m": [
+    500.0,
+    2800.0
+  ],
+  "source_count": 2,
+  "receiver_count": 7,
+  "stages": [
+    {
+      "index": 0,
+      "shape": [
+        5,
+        7
+      ],
+      "spacing_m": [
+        50.0,
+        50.0
+      ],
+      "frequencies_hz": [
+        2.0
+      ],
+      "initial_loss": 0.0006802764338796275,
+      "accepted_losses": [
+        0.0005895371203413649,
+        0.0005212002910358597,
+        0.00047404484247456284
+      ],
+      "closure_evaluations": 3,
+      "pml_widths_m": [
+        100.0,
+        100.0
+      ],
+      "max_phase_error": 0.008588596625965339,
+      "transfer_bound_corrections": 0,
+      "max_transfer_bound_correction_m_s": 0.0
+    },
+    {
+      "index": 1,
+      "shape": [
+        9,
+        13
+      ],
+      "spacing_m": [
+        25.0,
+        25.0
+      ],
+      "frequencies_hz": [
+        2.0
+      ],
+      "initial_loss": 0.00010369179813543599,
+      "accepted_losses": [
+        4.8980934622024313e-05,
+        1.5373608258661622e-05,
+        1.505672889283982e-06
+      ],
+      "closure_evaluations": 3,
+      "pml_widths_m": [
+        100.0,
+        100.0
+      ],
+      "max_phase_error": 0.0021101058274295426,
+      "transfer_bound_corrections": 0,
+      "max_transfer_bound_correction_m_s": 0.0
+    },
+    {
+      "index": 2,
+      "shape": [
+        9,
+        13
+      ],
+      "spacing_m": [
+        25.0,
+        25.0
+      ],
+      "frequencies_hz": [
+        2.0,
+        3.0
+      ],
+      "initial_loss": 7.05500577744123e-06,
+      "accepted_losses": [
+        1.7715560778129854e-05,
+        7.0270536349353516e-06,
+        6.559731558574254e-06
+      ],
+      "closure_evaluations": 3,
+      "pml_widths_m": [
+        100.0,
+        100.0
+      ],
+      "max_phase_error": 0.0047819992827631275,
+      "transfer_bound_corrections": 0,
+      "max_transfer_bound_correction_m_s": 0.0
+    }
+  ],
+  "inversion_seconds": 13.075330102117732,
+  "peak_cuda_allocated_bytes": 17673728,
+  "final_velocity_min_m_s": 1714.3880946800123,
+  "final_velocity_max_m_s": 1815.429941989787,
+  "final_velocity_rmse_m_s": 34.84289076157659,
+  "solver_config": {
+    "method": "fgmres",
+    "rtol": 1e-11,
+    "atol": 1e-14,
+    "maxiter": 240,
+    "restart": 40,
+    "device": "cuda",
+    "dtype": "torch.complex128",
+    "memory_budget_bytes": 536870912
+  },
+  "explicit_data_weight": 0.6454567177635532,
+  "gpu_speedup_claim": false
+}
