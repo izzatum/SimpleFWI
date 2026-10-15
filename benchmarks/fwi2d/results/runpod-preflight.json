@@ -1,19 +1,43 @@
 {
   "schema_version": 1,
   "task_id": "fwi-redesign-task-13",
-  "recorded_at_utc": "2026-10-15T14:27:35.894576+00:00",
-  "status": "blocked",
+  "recorded_at_utc": "2026-10-15T15:15:41.384053+00:00",
+  "status": "blocked_provider_workload_transport",
   "gpu_validation": "unrun",
   "gpu_workloads_executed": 0,
-  "provider_resource_mutations": [],
-  "task_created_resource_ids": [],
+  "provider_resource_mutations": [
+    {
+      "operation": "create",
+      "resource_id": "144hxuu5czqg3h",
+      "utc": "2026-10-15T14:59:09.649Z"
+    },
+    {
+      "operation": "create",
+      "resource_id": "qzu87v7wplhu0d",
+      "utc": "2026-10-15T15:13:29.405Z"
+    },
+    {
+      "operation": "delete",
+      "resource_id": "144hxuu5czqg3h",
+      "utc": "2026-10-15T15:05:33.438416+00:00"
+    },
+    {
+      "operation": "delete",
+      "resource_id": "qzu87v7wplhu0d",
+      "utc": "2026-10-15T15:14:22.236973+00:00"
+    }
+  ],
+  "task_created_resource_ids": [
+    "144hxuu5czqg3h",
+    "qzu87v7wplhu0d"
+  ],
   "environment_configuration": {
     "credential_destinations_saved": [
       "api.runpod.io",
       "rest.runpod.io"
     ],
-    "runtime_authentication_verified": false,
-    "publication": "pending_user_ui_confirmation",
+    "runtime_authentication_verified": true,
+    "publication": "published/current base configuration confirmed by parent; runtime API credential access working",
     "publication_tool_available": false
   },
   "observations": [
@@ -79,6 +103,32 @@
       "path": "/v2/catalog/gpus",
       "http_status": 401,
       "interpretation": "runtime request rejected; does not establish that real provider credential expired"
+    },
+    {
+      "phase": "fresh_runtime_retry_2026-10-15T14:51:44Z",
+      "host": "api.runpod.io",
+      "working_read_only_routes": [
+        "POST /graphql (account/pods query)",
+        "GET /v2/billing",
+        "GET /v2/pods",
+        "GET /v2/network-volumes",
+        "GET /v2/global-volumes",
+        "GET /v2/serverless",
+        "GET /v2/clusters",
+        "GET /v2/catalog/gpus"
+      ],
+      "http_status": 200,
+      "credit_sufficient_for_budget": true,
+      "current_account_rate_usd_per_hour": 0.0,
+      "visible_resource_counts": {
+        "pods": 0,
+        "network_volumes": 0,
+        "global_volumes": 0,
+        "serverless": 0,
+        "clusters": 0
+      },
+      "today_account_billing_reported_total_usd": 0.0,
+      "available_a40_quote_usd_per_hour": 0.59
     }
   ],
   "budget": {
@@ -86,32 +136,45 @@
     "total_ceiling": 10.0,
     "minimum_shutdown_storage_metering_reserve": 2.0,
     "maximum_compute_allowance_before_prior_cost": 8.0,
-    "known_new_resource_allocation_cost": 0.0,
+    "known_new_resource_allocation_cost": null,
     "prior_task_cost": null,
     "final_task_cost": null,
-    "available_credit": null,
-    "account_hourly_rate": null,
-    "selected_gpu_hourly_rate": null,
-    "storage_hourly_rate": null,
-    "launch_envelope_verified": false
+    "credit_sufficient_for_budget": true,
+    "account_hourly_rate": 0,
+    "selected_gpu_hourly_rate": 0.59,
+    "storage_hourly_rate": 0.005952380952380952,
+    "launch_envelope_verified": true,
+    "observed_account_debit_after_first_attempt": 0.0623020102,
+    "observed_total_account_debit": 0.0623020102
   },
   "shutdown": {
-    "documented_stop_route": "POST https://rest.runpod.io/v1/pods/{podId}/stop",
-    "documented_delete_route": "DELETE https://rest.runpod.io/v1/pods/{podId}",
-    "permission_verified": false,
+    "documented_stop_route": "POST https://api.runpod.io/v2/pods/{id}/action with action=stop",
+    "documented_delete_route": "DELETE https://api.runpod.io/v2/pods/{id}",
+    "permission_verified": true,
     "provider_enforced_deadline_verified": false,
-    "task_created_resources_requiring_cleanup": false
+    "task_created_resources_requiring_cleanup": false,
+    "external_controller_deadline_verified": true,
+    "all_created_pods_provider_confirmed_deleted": true,
+    "all_network_and_global_volume_inventories_empty": true
   },
   "blockers": [
-    "working authenticated account/pricing/billing and complete resource inventory unavailable",
-    "historical task expenditure and all-resource rate cannot be bounded or attributed",
-    "environment publication has not been confirmed through available tooling",
-    "CPU gates and exact experiment envelope require the root task validation record before any launch"
+    "Runtime GPU workload transport unavailable: direct SSH refused; corrected authenticated explicitly exposed Jupyter8888/http endpoint returnedCloudflare403/error1010",
+    "No GPU numerical workload executed; no third attempt performed",
+    "Final itemized expenditure remains unsettled despite confirmed provider deletion"
   ],
   "performance": null,
   "claims": [
-    "no GPU performance or speedup measured",
-    "no task-created billable resources",
-    "no proof that current total account or historical task spend is zero"
-  ]
+    "GraphQL/APIv2 provider account access works; previous real-key-expired interpretations are unsupported",
+    "two sequential task-owned A40 allocation attempts were terminated and provider absence verified",
+    "no GPU numerical validation, timings, accuracy or speedup measured",
+    "no persistent storage created and no unrelated resource changed",
+    "observed balance debits are not a settled final task bill"
+  ],
+  "provider_confirmed_deleted_resource_ids": [
+    "144hxuu5czqg3h",
+    "qzu87v7wplhu0d"
+  ],
+  "attempt_evidence": "runpod-attempts.json",
+  "final_provider_snapshot_utc": "2026-10-15T15:16:11.168947+00:00",
+  "credit_sufficient_for_budget": true
 }

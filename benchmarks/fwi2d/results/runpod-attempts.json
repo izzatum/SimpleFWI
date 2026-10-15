@@ -1,0 +1,409 @@
+{
+  "schema_version": 1,
+  "task_id": "fwi-redesign-task-13",
+  "recorded_at_utc": "2026-10-15T15:15:41.384053+00:00",
+  "status": "gpu_validation_blocked_after_two_cleaned_up_transport_attempts",
+  "user_total_budget_usd": 10.0,
+  "minimum_reserve_usd": 2.0,
+  "attempts": [
+    {
+      "attempt": 1,
+      "resource_id": "144hxuu5czqg3h",
+      "resource_name": "simplefwi-task13-20261015T145537Z",
+      "created_at_utc": "2026-10-15T14:59:09.649Z",
+      "provider_confirmed_deleted_at_utc": "2026-10-15T15:05:33.438416+00:00",
+      "status": "terminated_after_transport_blocker",
+      "gpu_workloads_executed": 0,
+      "source_revision": "9e415d1c66a922cce2b6d2b5151df38e7e8dd40a",
+      "source_archive_sha256": "c81e13e4ac7c80085b1b0c90c7402ee165ee6e454d918155c147adf4705db084",
+      "image_reference": "runpod/pytorch:1.4.0-cu1300-torch2120-ubuntu2404",
+      "image_digest": "sha256:93396b43c615b051e3951adbed2f958acff7d645936caa4029a58d0c1d309abd",
+      "provider_gpu_type": "NVIDIA A40",
+      "provider_gpu_count": 1,
+      "provider_compute_rate_usd_per_hour": 0.59,
+      "ephemeral_container_disk_gb": 40,
+      "persistent_mounts": {},
+      "created_network_or_global_volumes": false,
+      "armed_at_utc": "2026-10-15T14:58:39.650661+00:00",
+      "external_deadline_utc": "2026-10-15T15:43:39.650655+00:00",
+      "setup_cutoff_utc": "2026-10-15T15:08:39.650655+00:00",
+      "maximum_wall_seconds": 2700,
+      "maximum_setup_seconds": 600,
+      "account_spend_guard_usd": 1.0,
+      "shutdown_reserve_usd": 2.0,
+      "controller_sha256": "45e1dda213f9bbf252db7f3a50362382d4b026afe1ded78797ba50b5b9885d12",
+      "controller_mock_validation": "only exact task-owned ID deleted; unrelated mocked resource untouched; GET404 and two list checks required",
+      "lifecycle_events": [
+        {
+          "utc": "2026-10-15T14:58:39.711965+00:00",
+          "event": "controller_armed",
+          "deadline_epoch": 1792079019.6506553
+        },
+        {
+          "utc": "2026-10-15T14:59:11.894980+00:00",
+          "event": "owned_pod_discovered",
+          "pod_id": "144hxuu5czqg3h",
+          "pod_name": "simplefwi-task13-20261015T145537Z",
+          "cost": 0.59
+        },
+        {
+          "utc": "2026-10-15T15:05:27.198050+00:00",
+          "event": "task_pod_terminate_request",
+          "pod_id": "144hxuu5czqg3h",
+          "http_status": 204
+        },
+        {
+          "utc": "2026-10-15T15:05:27.504402+00:00",
+          "event": "task_pod_absence_check",
+          "pod_id": "144hxuu5czqg3h",
+          "http_status": 404
+        },
+        {
+          "utc": "2026-10-15T15:05:34.774749+00:00",
+          "event": "provider_confirmed_terminated",
+          "pod_ids": [
+            "144hxuu5czqg3h"
+          ]
+        }
+      ],
+      "allocated_to_confirmed_absence_seconds": 383.789416,
+      "estimated_compute_plus_disk_allocation_cost_usd": 0.06353339340264551,
+      "estimate_is_settled_bill": false,
+      "actual_remote_python_torch_cuda_driver": null,
+      "cuda_tests": "unrun",
+      "quick_solver_benchmark": "unrun",
+      "tutorial_gpu_branch": "unrun",
+      "cleanup": {
+        "delete_http_status": 204,
+        "pod_get_http_status": 404,
+        "consecutive_filtered_inventory_absence_checks": 2,
+        "network_volumes": {
+          "networkVolumes": [],
+          "pagination": {
+            "hasNextPage": false,
+            "nextCursor": null
+          }
+        },
+        "global_volumes": {
+          "globalVolumes": [],
+          "pagination": {
+            "hasNextPage": false,
+            "nextCursor": null
+          }
+        }
+      },
+      "immediate_itemized_pod_billing": {
+        "144hxuu5czqg3h": {
+          "http_status": 200,
+          "response": {
+            "metadata": {
+              "query": {
+                "bucketSize": "hour",
+                "endTime": "2026-10-15T16:00:00Z",
+                "podId": "144hxuu5czqg3h",
+                "startTime": "2026-10-15T00:00:00Z"
+              },
+              "recordCount": 0,
+              "totals": {
+                "cpuAmount": 0,
+                "diskAmount": 0,
+                "gpuAmount": 0,
+                "totalAmount": 0
+              },
+              "uniquePodCount": 0
+            },
+            "records": []
+          }
+        }
+      },
+      "metering_status": "unresolved; history lag must not be interpreted as free usage",
+      "ports": [
+        "22/tcp"
+      ],
+      "start_jupyter": false,
+      "transport_result": "provider-reported direct SSH refused connection; official SSH gateway handshake unavailable",
+      "initial_http_probe": {
+        "port": 19123,
+        "explicitly_exposed": false,
+        "authenticated": false,
+        "http_status": 403,
+        "response_body_retained": false,
+        "interpretation": "inconclusive for HTTP execution; not proof of a global HTTP/network denial"
+      }
+    },
+    {
+      "attempt": 2,
+      "resource_id": "qzu87v7wplhu0d",
+      "resource_name": "simplefwi-task13-http-20261015T151308Z",
+      "created_at_utc": "2026-10-15T15:13:29.405Z",
+      "provider_confirmed_deleted_at_utc": "2026-10-15T15:14:22.236973+00:00",
+      "status": "terminated_after_transport_blocker",
+      "gpu_workloads_executed": 0,
+      "source_revision": "9e415d1c66a922cce2b6d2b5151df38e7e8dd40a",
+      "source_archive_sha256": "c81e13e4ac7c80085b1b0c90c7402ee165ee6e454d918155c147adf4705db084",
+      "image_reference": "runpod/pytorch:1.4.0-cu1300-torch2120-ubuntu2404",
+      "image_digest": "sha256:93396b43c615b051e3951adbed2f958acff7d645936caa4029a58d0c1d309abd",
+      "provider_gpu_type": "NVIDIA A40",
+      "provider_gpu_count": 1,
+      "provider_compute_rate_usd_per_hour": 0.59,
+      "ephemeral_container_disk_gb": 40,
+      "persistent_mounts": {},
+      "created_network_or_global_volumes": false,
+      "armed_at_utc": "2026-10-15T15:13:27.603392+00:00",
+      "external_deadline_utc": "2026-10-15T15:58:27.603386+00:00",
+      "setup_cutoff_utc": "2026-10-15T15:23:27.603386+00:00",
+      "maximum_wall_seconds": 2700,
+      "maximum_setup_seconds": 600,
+      "account_spend_guard_usd": 1.0,
+      "shutdown_reserve_usd": 2.0,
+      "controller_sha256": "45e1dda213f9bbf252db7f3a50362382d4b026afe1ded78797ba50b5b9885d12",
+      "controller_mock_validation": "only exact task-owned ID deleted; unrelated mocked resource untouched; GET404 and two list checks required",
+      "lifecycle_events": [
+        {
+          "utc": "2026-10-15T15:13:27.656495+00:00",
+          "event": "controller_armed",
+          "deadline_epoch": 1792079907.603386
+        },
+        {
+          "utc": "2026-10-15T15:13:39.288688+00:00",
+          "event": "owned_pod_discovered",
+          "pod_id": "qzu87v7wplhu0d",
+          "pod_name": "simplefwi-task13-http-20261015T151308Z",
+          "cost": 0.59
+        },
+        {
+          "utc": "2026-10-15T15:14:15.052560+00:00",
+          "event": "task_pod_terminate_request",
+          "pod_id": "qzu87v7wplhu0d",
+          "http_status": 204
+        },
+        {
+          "utc": "2026-10-15T15:14:15.634030+00:00",
+          "event": "task_pod_absence_check",
+          "pod_id": "qzu87v7wplhu0d",
+          "http_status": 404
+        },
+        {
+          "utc": "2026-10-15T15:14:23.378716+00:00",
+          "event": "provider_confirmed_terminated",
+          "pod_ids": [
+            "qzu87v7wplhu0d"
+          ]
+        }
+      ],
+      "allocated_to_confirmed_absence_seconds": 52.831973,
+      "estimated_compute_plus_disk_allocation_cost_usd": 0.008745927805489417,
+      "estimate_is_settled_bill": false,
+      "actual_remote_python_torch_cuda_driver": null,
+      "cuda_tests": "unrun",
+      "quick_solver_benchmark": "unrun",
+      "tutorial_gpu_branch": "unrun",
+      "cleanup": {
+        "delete_http_status": 204,
+        "pod_get_http_status": 404,
+        "consecutive_filtered_inventory_absence_checks": 2,
+        "network_volumes": {
+          "networkVolumes": [],
+          "pagination": {
+            "hasNextPage": false,
+            "nextCursor": null
+          }
+        },
+        "global_volumes": {
+          "globalVolumes": [],
+          "pagination": {
+            "hasNextPage": false,
+            "nextCursor": null
+          }
+        }
+      },
+      "immediate_itemized_pod_billing": {
+        "qzu87v7wplhu0d": {
+          "http_status": 200,
+          "response": {
+            "metadata": {
+              "query": {
+                "bucketSize": "hour",
+                "endTime": "2026-10-15T16:00:00Z",
+                "podId": "qzu87v7wplhu0d",
+                "startTime": "2026-10-15T00:00:00Z"
+              },
+              "recordCount": 0,
+              "totals": {
+                "cpuAmount": 0,
+                "diskAmount": 0,
+                "gpuAmount": 0,
+                "totalAmount": 0
+              },
+              "uniquePodCount": 0
+            },
+            "records": []
+          }
+        }
+      },
+      "metering_status": "unresolved; history lag must not be interpreted as free usage",
+      "ports": [
+        "8888/http"
+      ],
+      "start_jupyter": true,
+      "start_ssh": false,
+      "tutorial_revision": "27142a49ae35464debdf202e4d0e79e7c98669fa",
+      "tutorial_source_sha256": "d14d232abfd3b7871de190b22c5a7be1b3c0ff155e5df8c34c923994d6c0be1b",
+      "authentication": "fresh workload token only in Authorization header; never in URLs or public artifacts; provider credential never sent to Pod",
+      "transport_result": "correctly exposed authenticated Jupyter contents endpoint denied by Cloudflare",
+      "http_probe": {
+        "method": "GET",
+        "path": "/api/contents",
+        "port": 8888,
+        "explicitly_exposed": true,
+        "token_header_supplied": true,
+        "https_ca_and_hostname_verification": true,
+        "http_status": 403,
+        "sanitized_body": "error code: 1010",
+        "kernel_websocket_attempted": false
+      },
+      "additional_attempts_authorized_or_run": false
+    }
+  ],
+  "local_jupyter_transport_proof": {
+    "scope": "loopback HTTP plus real kernel WebSocket proof",
+    "provider_resource_mutations": 0,
+    "provider_key_absent_from_server_environment": true,
+    "remote_TLS_policy": "system CA roots, CERT_REQUIRED, hostname verification",
+    "authenticated_contents_status": 200,
+    "unauthenticated_contents_status": 403,
+    "archive_upload_status": 201,
+    "kernel_start_status": 201,
+    "kernel_websocket_execution": "passed",
+    "archive_sha256_verified_in_kernel": "c81e13e4ac7c80085b1b0c90c7402ee165ee6e454d918155c147adf4705db084",
+    "archive_bytes": 2812067,
+    "safe_archive_extraction": "passed",
+    "downloaded_archive_roundtrip": "passed",
+    "kernel_delete_status": 204,
+    "proof_server_terminated": true,
+    "secret_not_logged": true
+  },
+  "observed_account_debit_after_first_attempt_usd": 0.0623020102,
+  "final_itemized_task_cost_usd": null,
+  "billing_note": "Provider itemized history remained empty after more than five minutes; balance debits are observed charges, not a certified final settled total.",
+  "required_user_action": "Provider/API account access now works. A supported runtime connection from this cloud client must be allowed by RunPod/site-owner access policy before another paid attempt; no new API secret or repeated publication is indicated by current evidence.",
+  "final_provider_snapshot": {
+    "observed_at_utc": "2026-10-15T15:16:11.168947+00:00",
+    "results": [
+      {
+        "probe": "account",
+        "http_status": 200,
+        "result": {
+          "data": {
+            "myself": {
+              "credit_sufficient_for_budget": true,
+              "currentSpendPerHr": 0,
+              "spendLimit": 80,
+              "pods": []
+            }
+          }
+        }
+      },
+      {
+        "probe": "pods",
+        "http_status": 200,
+        "result": {
+          "pagination": {
+            "hasNextPage": false,
+            "nextCursor": null
+          },
+          "pods": []
+        }
+      },
+      {
+        "probe": "network_volumes",
+        "http_status": 200,
+        "result": {
+          "networkVolumes": [],
+          "pagination": {
+            "hasNextPage": false,
+            "nextCursor": null
+          }
+        }
+      },
+      {
+        "probe": "global_volumes",
+        "http_status": 200,
+        "result": {
+          "globalVolumes": [],
+          "pagination": {
+            "hasNextPage": false,
+            "nextCursor": null
+          }
+        }
+      },
+      {
+        "probe": "serverless",
+        "http_status": 200,
+        "result": {
+          "endpoints": [],
+          "pagination": {
+            "hasNextPage": false,
+            "nextCursor": null
+          }
+        }
+      },
+      {
+        "probe": "clusters",
+        "http_status": 200,
+        "result": {
+          "clusters": [],
+          "pagination": {
+            "hasNextPage": false,
+            "nextCursor": null
+          }
+        }
+      },
+      {
+        "probe": "billing",
+        "http_status": 200,
+        "result": {
+          "metadata": {
+            "query": {
+              "bucketSize": "hour",
+              "endTime": "2026-10-15T16:00:00Z",
+              "startTime": "2026-10-15T00:00:00Z"
+            },
+            "recordCount": 0,
+            "totals": {
+              "clusterDiskAmount": 0,
+              "clusterGpuAmount": 0,
+              "clusterNetworkingAmount": 0,
+              "endpointAmount": 0,
+              "podCpuAmount": 0,
+              "podDiskAmount": 0,
+              "podGpuAmount": 0,
+              "serverlessCpuAmount": 0,
+              "serverlessDiskAmount": 0,
+              "serverlessFeeAmount": 0,
+              "serverlessGpuAmount": 0,
+              "storageHighPerformanceAmount": 0,
+              "storageStandardAmount": 0,
+              "totalAmount": 0
+            }
+          },
+          "records": []
+        }
+      },
+      {
+        "probe": "individual_pod_144hxuu5czqg3h",
+        "http_status": 404
+      },
+      {
+        "probe": "individual_pod_qzu87v7wplhu0d",
+        "http_status": 404
+      }
+    ]
+  },
+  "observed_total_account_debit_usd": 0.0623020102,
+  "credit_sufficient_for_budget": true,
+  "last_account_spend_usd_per_hour": 0,
+  "all_created_pods_deleted": true,
+  "no_active_or_stored_resources_visible_at_final_check": true,
+  "no_third_attempt_performed": true
+}

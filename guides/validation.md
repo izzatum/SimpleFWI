@@ -155,12 +155,18 @@ records finite forward data and physical gradients at 2 Hz on the supplied
 independent physical accuracy, reconstruction quality, a highest useful
 frequency, or the information gained from additional sources.
 
-Actual CUDA execution remains unrun because no CUDA hardware was available.
+Actual CUDA execution remains unrun. Two subsequent RunPod attempts reached
+provisioned hardware but failed remote execution access: direct SSH was
+unreachable and the explicitly exposed, authenticated Jupyter proxy returned
+Cloudflare error 1010. Both pods were terminated/deleted with provider-confirmed
+absence; no persistent storage remains. The
+[attempt manifest](../benchmarks/fwi2d/results/runpod-attempts.json) records this
+separately from the successful CPU numerical work.
 The eight CUDA-required checks cover four device/precision cases, one allocation
 scaling case, and three pinned-buffer/event recording cases. CPU runs report
 these as skips; they are not passing GPU validation. The
 [RunPod protocol](../benchmarks/fwi2d/runpod_protocol.md) describes the bounded
-hardware validation procedure and records the blocked provisioning status.
+hardware validation procedure and records the remote-execution blocker.
 
 Use `python -m pytest tests/fwi2d -q` for the new implementation's targeted suite.
 The legacy full-repository pytest run still aborts during collection: the

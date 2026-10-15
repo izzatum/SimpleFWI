@@ -60,6 +60,22 @@ review checked native plots and rendered notebooks at desktop and narrow widths.
 Open multi-panel figures at their native size or zoom when using a small screen.
 The CPU CI job now executes these tutorials on future changes.
 
+GPU validation remains unrun. RunPod account access works, but the provisioned
+execution connections failed: SSH was unreachable and authenticated Jupyter
+requests received Cloudflare error 1010. **Both test pods were deleted and no
+persistent storage remains.** See the [attempt record](../benchmarks/fwi2d/results/runpod-attempts.json).
+
+To run the GPU section from an accessible RunPod session, copy this checkout
+into a pod with a matching PyTorch 2.12.0 CUDA environment, expose Jupyter on
+`8888/http`, and open its authenticated Jupyter service through RunPod's Connect
+panel. Install the repository dependencies and select that Python kernel; check
+`torch.cuda.is_available()` before running notebook 01. The notebook performs
+the matched numerical comparison itself. Terminate/delete the pod after use,
+and remove any separately created storage. To restore automated access from
+this cloud workspace, ask RunPod support to resolve the SSH connection failure
+and Cloudflare 1010 on authenticated pod-proxy HTTPS/WebSocket traffic; the
+account API credential already works.
+
 ## Interpret the results
 
 - A small linear residual establishes solution of the discrete equation; it

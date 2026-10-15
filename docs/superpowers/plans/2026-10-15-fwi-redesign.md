@@ -25,7 +25,7 @@ GPU-dependent step does not mean its CPU portion is absent.
 | 10 | Tensor solver and CPU benchmark delivered; CUDA unrun, no measured speed crossover, harder cases failed convergence. It remains experimental. |
 | 11 | Dispersion screening and immutable estimates delivered; plans remain `screened_only`. Automatic validated stage execution/regridding is incomplete. |
 | 12 | API/CLI and examples delivered; full supplied Marmousi forward/gradient measured at 2 Hz with 371 sources. Higher-frequency physical accuracy and reconstruction remain unrun. |
-| 13 | Blocked by RunPod HTTP 401/403. No paid resources created. Protocol and sanitized evidence committed; no GPU validation claimed. |
+| 13 | Account access restored; two bounded A40 attempts failed execution access (SSH, then authenticated Jupyter Cloudflare 1010). Both pods deleted and storage absence verified. Final itemized billing pending; no GPU numerical validation claimed. |
 | 14 | Illustrated README, executable examples, guides, locked installation and wheel checks delivered. |
 
 CPU details, timing manifests and limitations: [implementation status](../../../guides/implementation-status.md).
@@ -262,4 +262,4 @@ Supporting files: `tests/fwi2d/` for real executable tests, `examples/fwi2d/` fo
 
 The plan is complete when its documentation captures all agreed requirements; implementation is complete only when the applicable task checkboxes and scientific gates have evidence. Do not mark GPU scaling, full Marmousi inversion, or uncertainty accuracy complete based solely on small CPU tests.
 
-Execution used agents with disjoint file ownership and independent numerical review, followed by controller integration in the existing isolated checkout. Further paid work remains conditional on the recorded RunPod access and cost gates. The remaining unchecked steps above are not completed by this handoff.
+Execution used agents with disjoint file ownership and independent numerical review, followed by controller integration in the existing isolated checkout. Any further paid work requires resolution of the recorded execution-access blocker and updated cumulative cost gates; two task-created pods have already been deleted. The remaining unchecked steps above are not completed by this handoff.

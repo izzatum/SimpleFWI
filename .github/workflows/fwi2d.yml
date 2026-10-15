@@ -71,3 +71,10 @@ jobs:
           python3.12 -m pip install --no-deps --force-reinstall /tmp/fwi-cuda-wheels/*.whl
       - name: Run explicit device contracts and recording with CUDA assertions
         run: python3.12 -m pytest tests/fwi2d -m cuda -q -rs
+      - name: Execute Helmholtz tutorial with actual CUDA
+        run: |
+          python3.12 -m pip install -c requirements/fwi2d-py312.lock \
+            nbformat==5.11.1 nbclient==0.11.0 nbconvert==7.17.2 ipykernel==7.4.0
+          python3.12 -m jupyter nbconvert --execute --to notebook \
+            --output-dir /tmp/fwi-cuda-tutorial --ExecutePreprocessor.timeout=300 \
+            notebooks/01_helmholtz_marmousi_cpu_gpu.ipynb

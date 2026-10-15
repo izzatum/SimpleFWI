@@ -13,7 +13,7 @@ not evidence of production-scale GPU performance.
 | Outputs and restart | Bounded HDF5 writer with backpressure, optional selected arrays, accepted-state callbacks and atomic native-state/RNG checkpoints. Restart validates the actual velocity bounds and representation. CUDA pinned buffers/events are implemented but have not run on hardware. Recording and checkpointing have measurable cost. |
 | Dispersion and resource planning | Angular finite-difference symbol screening and immutable resource estimates. A returned `screened_only` plan is not physical validation. Automatic execution of regridding/stage transitions is not supplied; applications must construct a new stage and reset incompatible optimizer history. |
 | Iterative solver | Restarted PyTorch FGMRES and shifted Galerkin multigrid pass CPU algebraic/derivative checks. The CPU benchmark found no speed crossover and two harder cases failed convergence. Sparse-direct CPU solves remain the reference default. |
-| User workflow | Public facade, bounded JSON/CLI smoke runs, Camembert/Marmousi examples, illustrated executable README, migration guides and CPU/manual-CUDA CI definitions. |
+| User workflow | Public facade, bounded JSON/CLI smoke runs, Camembert/Marmousi examples, illustrated executable README, three [executed tutorial notebooks](../notebooks/README.md), migration guides and CPU/manual-CUDA CI definitions. |
 
 ## Measured examples
 
@@ -60,14 +60,23 @@ checkout. The repository-wide legacy collection still aborts on the pre-existing
 BB inversion import; see [validation](validation.md). The new suite does not
 replace or conceal that result.
 
-RunPod account/rate/inventory checks returned HTTP 401/403 after the credential
-destination settings changed. No paid resource was created; this preflight
-allocated USD 0 in new resources. Historical account expenditure and final
-provider totals could not be verified. The [RunPod protocol](../benchmarks/fwi2d/runpod_protocol.md)
-records the USD 10 ceiling, at least USD 2 reserve, missing gates and cleanup
-requirements. Actual CUDA tests, transfer measurements and GPU benchmarks are
-unrun. Publication belongs to the environment settings UI; saving setup
-instructions does not publish or establish working runtime credentials.
+The three tutorials subsequently executed all **30 default code cells** on CPU
+with **16 saved figures**, independent headless execution and scientific/visual
+review. They demonstrate Marmousi forward solves, Adam/RMSprop/L-BFGS workflows,
+and Camembert exact/Gauss–Newton curvature with local uncertainty.
+
+RunPod account/rate/inventory access now works through GraphQL and API v2.
+Two bounded A40 attempts were made: direct SSH was unreachable on the first;
+the second explicitly exposed authenticated Jupyter on HTTP port 8888, but its
+proxy returned Cloudflare error 1010. The Jupyter transport had passed a local
+upload/execute/download test. No remote numerical workload executed.
+**Both pods were terminated/deleted and their absence verified; no persistent
+storage remains.** Final itemized provider billing is still pending. The
+[attempt manifest](../benchmarks/fwi2d/results/runpod-attempts.json) distinguishes
+observed account debits, estimates, and final billing. The
+[RunPod protocol](../benchmarks/fwi2d/runpod_protocol.md) records the USD 10
+ceiling, at least USD 2 reserve, external deadlines, access blocker and cleanup.
+CUDA tests and GPU benchmarks remain unrun; no GPU speedup is claimed.
 
 ## Implementation decisions
 
