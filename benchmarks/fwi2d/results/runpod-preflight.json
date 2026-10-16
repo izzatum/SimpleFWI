@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "task_id": "fwi-redesign-task-13",
+  "recorded_at_utc": "2026-10-15T15:36:54.930491+00:00",
+  "status": "blocked_before_allocation_after_published_binding_change",
+  "gpu_validation": "unrun",
+  "gpu_workloads_executed": 0,
+  "provider_resource_mutations": [
+    {
+      "operation": "create",
+      "resource_id": "144hxuu5czqg3h",
+      "utc": "2026-10-15T14:59:09.649Z"
+    },
+    {
+      "operation": "create",
+      "resource_id": "qzu87v7wplhu0d",
+      "utc": "2026-10-15T15:13:29.405Z"
+    },
+    {
+      "operation": "delete",
+      "resource_id": "144hxuu5czqg3h",
+      "utc": "2026-10-15T15:05:33.438416+00:00"
+    },
+    {
+      "operation": "delete",
+      "resource_id": "qzu87v7wplhu0d",
+      "utc": "2026-10-15T15:14:22.236973+00:00"
+    }
+  ],
+  "task_created_resource_ids": [
+    "144hxuu5czqg3h",
+    "qzu87v7wplhu0d"
+  ],
+  "environment_configuration": {
+    "credential_destinations_saved": [
+      "rest.runpod.io"
+    ],
+    "runtime_authentication_verified": false,
+    "publication": "published configuration now omits api.runpod.io from the existing secret destination list",
+    "publication_tool_available": false,
+    "previous_successful_authentication": "historical fresh_runtime_retry_2026-10-15T14:51:44Z observation retained below",
+    "required_correction": "Edit existing RUNPOD_API_KEY destinations in environment settings to include api.runpod.io and rest.runpod.io; save and publish. Tool rejected destination change with INVALID_ARGUMENT; no binding change saved."
+  },
+  "observations": [
+    {
+      "phase": "initial",
+      "host": "rest.runpod.io",
+      "method": "GET",
+      "path": "/v1/pods",
+      "http_status": 200,
+      "visible_pod_count": 0
+    },
+    {
+      "phase": "latest_retest",
+      "host": "rest.runpod.io",
+      "method": "GET",
+      "path": "/v1/pods",
+      "http_status": 403,
+      "sanitized_error": "error code: 1010"
+    },
+    {
+      "phase": "latest_retest",
+      "host": "rest.runpod.io",
+      "method": "GET",
+      "path": "/v1/billing/pods",
+      "http_status": 403,
+      "sanitized_error": "error code: 1010"
+    },
+    {
+      "phase": "inventory_preflight",
+      "host": "rest.runpod.io",
+      "method": "GET",
+      "paths": [
+        "/v1/networkvolumes",
+        "/v1/endpoints",
+        "/v1/billing/networkvolumes",
+        "/v1/billing/endpoints"
+      ],
+      "http_status": 403
+    },
+    {
+      "phase": "latest_retest",
+      "host": "api.runpod.io",
+      "method": "POST",
+      "path": "/graphql",
+      "operation_type": "query",
+      "requested_facts": [
+        "credit",
+        "current_hourly_spend",
+        "spend_limit",
+        "pods",
+        "gpu_prices"
+      ],
+      "http_status": 401,
+      "auth_mechanisms_tried": [
+        "bearer",
+        "documented_api_key_query"
+      ]
+    },
+    {
+      "phase": "latest_retest",
+      "host": "api.runpod.io",
+      "method": "GET",
+      "path": "/v2/catalog/gpus",
+      "http_status": 401,
+      "interpretation": "runtime request rejected; does not establish that real provider credential expired"
+    },
+    {
+      "phase": "fresh_runtime_retry_2026-10-15T14:51:44Z",
+      "host": "api.runpod.io",
+      "working_read_only_routes": [
+        "POST /graphql (account/pods query)",
+        "GET /v2/billing",
+        "GET /v2/pods",
+        "GET /v2/network-volumes",
+        "GET /v2/global-volumes",
+        "GET /v2/serverless",
+        "GET /v2/clusters",
+        "GET /v2/catalog/gpus"
+      ],
+      "http_status": 200,
+      "credit_sufficient_for_budget": true,
+      "current_account_rate_usd_per_hour": 0.0,
+      "visible_resource_counts": {
+        "pods": 0,
+        "network_volumes": 0,
+        "global_volumes": 0,
+        "serverless": 0,
+        "clusters": 0
+      },
+      "today_account_billing_reported_total_usd": 0.0,
+      "available_a40_quote_usd_per_hour": 0.59
+    },
+    {
+      "phase": "fresh_retry_2026-10-15T15:35:34Z",
+      "evidence": "runpod-retry.json",
+      "provider_mutations": 0,
+      "new_gpu_numerical_workloads": 0,
+      "permitted_rest_inventory_billing_status": 403,
+      "rest_error": "Cloudflare error 1010",
+      "api_account_billing_status": 401,
+      "api_credential_binding_present": false,
+      "current_inventory_and_billing_available": false
+    }
+  ],
+  "budget": {
+    "currency": "USD",
+    "total_ceiling": 10.0,
+    "minimum_shutdown_storage_metering_reserve": 2.0,
+    "maximum_compute_allowance_before_prior_cost": 8.0,
+    "known_new_resource_allocation_cost": null,
+    "prior_task_cost": null,
+    "final_task_cost": null,
+    "credit_sufficient_for_budget": null,
+    "account_hourly_rate": null,
+    "selected_gpu_hourly_rate": 0.59,
+    "storage_hourly_rate": 0.005952380952380952,
+    "launch_envelope_verified": false,
+    "observed_account_debit_after_first_attempt": 0.0623020102,
+    "observed_total_account_debit": 0.0623020102
+  },
+  "shutdown": {
+    "documented_stop_route": "POST https://api.runpod.io/v2/pods/{id}/action with action=stop",
+    "documented_delete_route": "DELETE https://api.runpod.io/v2/pods/{id}",
+    "permission_verified": true,
+    "provider_enforced_deadline_verified": false,
+    "task_created_resources_requiring_cleanup": false,
+    "external_controller_deadline_verified": true,
+    "all_created_pods_provider_confirmed_deleted": true,
+    "all_network_and_global_volume_inventories_empty": true,
+    "current_verification_available": false,
+    "historical_confirmed_cleanup_snapshot_utc": "2026-10-15T15:16:11.168947+00:00"
+  },
+  "blockers": [
+    "Published RUNPOD_API_KEY binding omits api.runpod.io; current account/billing HTTP 401 cannot establish real-key expiry",
+    "Permitted REST inventory/billing endpoints still return Cloudflare HTTP 403/error 1010",
+    "Current account, inventory and itemized spending cannot be refreshed; no new allocation was made",
+    "Prior runtime SSH/Jupyter transport unavailable; binding repair alone does not establish workload access",
+    "Final itemized expenditure remains unknown; prior provider-confirmed deletion retained as historical evidence"
+  ],
+  "performance": null,
+  "claims": [
+    "API v2/GraphQL worked during the prior two attempts; the latest published credential destination list has changed",
+    "Latest read-only retry created no new resource or allocation cost and ran no GPU numerical workload",
+    "Two earlier task-owned A40 pods were terminated and provider absence verified at the recorded historical snapshot",
+    "No persistent storage was created during the historical attempts; no unrelated resource was changed",
+    "Observed historical account debits are not a settled final task bill"
+  ],
+  "provider_confirmed_deleted_resource_ids": [
+    "144hxuu5czqg3h",
+    "qzu87v7wplhu0d"
+  ],
+  "attempt_evidence": "runpod-attempts.json",
+  "final_provider_snapshot_utc": "2026-10-15T15:16:11.168947+00:00",
+  "credit_sufficient_for_budget": null,
+  "latest_retry_evidence": "runpod-retry.json",
+  "current_state_pointer": {
+    "recorded_at_utc": "2026-10-15T18:12:34.158441+00:00",
+    "status": "gpu_validation_passed_task_pods_terminated",
+    "manifest": "runpod-multiscale.json",
+    "note": "Earlier observations below are historical. Current API access, actual GPU execution, owned resource cleanup and costs are recorded in the linked manifest."
+  }
+}

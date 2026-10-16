@@ -1,0 +1,284 @@
+{
+  "python": "3.12.3",
+  "torch": "2.12.0+cu130",
+  "device": "cpu",
+  "cuda_available": true,
+  "cuda_validation": "unrun",
+  "seed": 20261015,
+  "dtype": "torch.complex128",
+  "threads": 1,
+  "scope": "algebraic fixtures; no dispersion, PML calibration or GPU speedup claim",
+  "timing": "untimed tiny backend/autograd warmup; warm forward, then incremental backward with create_graph, then exact HVP; setup+all RHS also measured",
+  "memory": "tensor estimates; CUDA peak allocator bytes when available; CPU RSS is not inferred",
+  "records": [
+    {
+      "shape": [
+        8,
+        12
+      ],
+      "frequency_hz": 5.0,
+      "velocity_contrast": 1.0,
+      "n_dof": 192,
+      "rhs_count": 2,
+      "direct_cpu": {
+        "status": "passed",
+        "setup_seconds": null,
+        "setup_plus_all_rhs_seconds": 0.003247389104217291,
+        "warm_all_rhs_seconds": 0.000980620039626956,
+        "implicit_forward_seconds": 0.0010676928795874119,
+        "implicit_gradient_increment_seconds": 0.002782503142952919,
+        "implicit_hvp_increment_seconds": 0.00531745096668601,
+        "maximum_relative_residual": 1.1628902524433044e-14,
+        "maximum_iterations_per_rhs": 1,
+        "estimated_tensor_bytes": 118596,
+        "cuda_peak_allocated_bytes": null,
+        "solve_calls": 8,
+        "primal_report": {
+          "relative_residual": 9.68903015141625e-16,
+          "absolute_residual": 1.3278306916165625e-14,
+          "iterations": 1,
+          "convergence_reason": "direct_factorization",
+          "elapsed_seconds": 0.0032010888680815697,
+          "memory_bytes": 118596,
+          "converged": true
+        },
+        "solve_reports": [
+          {
+            "relative_residual": 9.68903015141625e-16,
+            "absolute_residual": 1.3278306916165625e-14,
+            "iterations": 1,
+            "convergence_reason": "direct_factorization",
+            "elapsed_seconds": 0.0032010888680815697,
+            "memory_bytes": 118596,
+            "converged": true
+          },
+          {
+            "relative_residual": 9.68903015141625e-16,
+            "absolute_residual": 1.3278306916165625e-14,
+            "iterations": 1,
+            "convergence_reason": "direct_factorization",
+            "elapsed_seconds": 0.0009478370193392038,
+            "memory_bytes": 99744,
+            "converged": true
+          },
+          {
+            "relative_residual": 9.68903015141625e-16,
+            "absolute_residual": 1.3278306916165625e-14,
+            "iterations": 1,
+            "convergence_reason": "direct_factorization",
+            "elapsed_seconds": 0.0009087009821087122,
+            "memory_bytes": 99744,
+            "converged": true
+          },
+          {
+            "relative_residual": 9.68903015141625e-16,
+            "absolute_residual": 1.3278306916165625e-14,
+            "iterations": 1,
+            "convergence_reason": "direct_factorization",
+            "elapsed_seconds": 0.0009347239974886179,
+            "memory_bytes": 99744,
+            "converged": true
+          },
+          {
+            "relative_residual": 1.1513785030406635e-14,
+            "absolute_residual": 2.7373090895688964e-18,
+            "iterations": 1,
+            "convergence_reason": "direct_factorization",
+            "elapsed_seconds": 0.0009762600529938936,
+            "memory_bytes": 99744,
+            "converged": true
+          },
+          {
+            "relative_residual": 3.833840881842497e-15,
+            "absolute_residual": 4.438231929594664e-16,
+            "iterations": 1,
+            "convergence_reason": "direct_factorization",
+            "elapsed_seconds": 0.00098463986068964,
+            "memory_bytes": 99744,
+            "converged": true
+          },
+          {
+            "relative_residual": 3.673018986068399e-15,
+            "absolute_residual": 7.786937779708308e-20,
+            "iterations": 1,
+            "convergence_reason": "direct_factorization",
+            "elapsed_seconds": 0.001028022961691022,
+            "memory_bytes": 99744,
+            "converged": true
+          },
+          {
+            "relative_residual": 1.1628902524433044e-14,
+            "absolute_residual": 9.45843173542793e-20,
+            "iterations": 1,
+            "convergence_reason": "direct_factorization",
+            "elapsed_seconds": 0.0009549141395837069,
+            "memory_bytes": 99744,
+            "converged": true
+          }
+        ],
+        "solver_config": {
+          "method": "direct",
+          "rtol": 1e-11,
+          "atol": 1e-13,
+          "maxiter": 200,
+          "restart": 30,
+          "device": "cpu",
+          "dtype": "torch.complex128",
+          "memory_budget_bytes": 1073741824
+        }
+      },
+      "fgmres": {
+        "status": "passed",
+        "setup_seconds": 0.005008439999073744,
+        "setup_plus_all_rhs_seconds": 0.1496786749921739,
+        "warm_all_rhs_seconds": 0.14019200089387596,
+        "implicit_forward_seconds": 0.13859847094863653,
+        "implicit_gradient_increment_seconds": 0.28058368898928165,
+        "implicit_hvp_increment_seconds": 0.3818752251099795,
+        "maximum_relative_residual": 4.143970054623923e-09,
+        "maximum_iterations_per_rhs": 15,
+        "estimated_tensor_bytes": 805952,
+        "cuda_peak_allocated_bytes": null,
+        "solve_calls": 8,
+        "primal_report": {
+          "relative_residual": 3.278161103775394e-12,
+          "absolute_residual": 4.492547610681486e-11,
+          "iterations": 15,
+          "convergence_reason": "true_residual_tolerance",
+          "elapsed_seconds": 0.14457216416485608,
+          "memory_bytes": 805952,
+          "converged": true
+        },
+        "solve_reports": [
+          {
+            "relative_residual": 3.278161103775394e-12,
+            "absolute_residual": 4.492547610681486e-11,
+            "iterations": 15,
+            "convergence_reason": "true_residual_tolerance",
+            "elapsed_seconds": 0.14457216416485608,
+            "memory_bytes": 805952,
+            "converged": true
+          },
+          {
+            "relative_residual": 3.278161103775394e-12,
+            "absolute_residual": 4.492547610681486e-11,
+            "iterations": 15,
+            "convergence_reason": "true_residual_tolerance",
+            "elapsed_seconds": 0.1401408649981022,
+            "memory_bytes": 805952,
+            "converged": true
+          },
+          {
+            "relative_residual": 3.278161103775394e-12,
+            "absolute_residual": 4.492547610681486e-11,
+            "iterations": 15,
+            "convergence_reason": "true_residual_tolerance",
+            "elapsed_seconds": 0.13833955489099026,
+            "memory_bytes": 805952,
+            "converged": true
+          },
+          {
+            "relative_residual": 3.278161103775394e-12,
+            "absolute_residual": 4.492547610681486e-11,
+            "iterations": 15,
+            "convergence_reason": "true_residual_tolerance",
+            "elapsed_seconds": 0.13640156807377934,
+            "memory_bytes": 805952,
+            "converged": true
+          },
+          {
+            "relative_residual": 7.032129905599347e-11,
+            "absolute_residual": 1.677870033996223e-14,
+            "iterations": 14,
+            "convergence_reason": "true_residual_tolerance",
+            "elapsed_seconds": 0.14300623210147023,
+            "memory_bytes": 805952,
+            "converged": true
+          },
+          {
+            "relative_residual": 5.1905221692874475e-12,
+            "absolute_residual": 5.578813995815322e-13,
+            "iterations": 15,
+            "convergence_reason": "true_residual_tolerance",
+            "elapsed_seconds": 0.13791995798237622,
+            "memory_bytes": 805952,
+            "converged": true
+          },
+          {
+            "relative_residual": 2.882772531348946e-09,
+            "absolute_residual": 4.737885916227134e-14,
+            "iterations": 12,
+            "convergence_reason": "true_residual_tolerance",
+            "elapsed_seconds": 0.12039406481198967,
+            "memory_bytes": 805952,
+            "converged": true
+          },
+          {
+            "relative_residual": 4.143970054623923e-09,
+            "absolute_residual": 3.370520803064719e-14,
+            "iterations": 12,
+            "convergence_reason": "true_residual_tolerance",
+            "elapsed_seconds": 0.12086116895079613,
+            "memory_bytes": 805952,
+            "converged": true
+          }
+        ],
+        "solver_config": {
+          "method": "fgmres",
+          "rtol": 1e-11,
+          "atol": 1e-13,
+          "maxiter": 120,
+          "restart": 30,
+          "device": "cpu",
+          "dtype": "torch.complex128",
+          "memory_budget_bytes": 536870912
+        },
+        "multigrid_config": {
+          "shift": 0.5,
+          "max_levels": 8,
+          "coarse_max_dof": 36,
+          "pre_smooth": 2,
+          "post_smooth": 2,
+          "damping": 0.6666666666666666,
+          "memory_budget_bytes": 268435456
+        },
+        "hierarchy_shapes": [
+          [
+            14,
+            18
+          ],
+          [
+            8,
+            10
+          ],
+          [
+            5,
+            6
+          ]
+        ],
+        "basis_peak_vectors": 61,
+        "waveform_relative_error": 4.5577705041350975e-12,
+        "gradient_relative_error": 8.064664019695723e-12,
+        "hvp_relative_error": 2.6006151561708295e-10,
+        "accuracy_criteria": {
+          "dtype": "torch.complex128",
+          "comparison": "relative Euclidean error against CPU complex128 direct solve",
+          "maximum_relative_errors": {
+            "waveform_relative_error": 1e-07,
+            "gradient_relative_error": 1e-07,
+            "hvp_relative_error": 1e-05
+          },
+          "gradient_and_hvp_coordinates": "theta=log(m/m_reference)",
+          "threshold_source": {
+            "waveform": "FWI redesign specification acceptance gate 6 precision limits",
+            "gradient": "Gate 6 numeric precision limits adopted for log-slowness benchmark gradients; physical-gradient checks are separate tests",
+            "hvp": "Gate 5 1e-5 derivative consistency target adopted for direct-reference complex128 HVP comparison; complex64 1e-2 is an explicit experimental benchmark design choice, not a specification or uncertainty acceptance gate"
+          },
+          "acceptance": "all three errors must be present, finite, nonnegative and <= their limits"
+        },
+        "accuracy_failures": [],
+        "accuracy_evaluation": "passed"
+      }
+    }
+  ]
+}

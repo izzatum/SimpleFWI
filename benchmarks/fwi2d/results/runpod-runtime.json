@@ -1,0 +1,21 @@
+{
+  "python": "3.12.3",
+  "torch": "2.12.0+cu130",
+  "torch_cuda_build": "13.0",
+  "cuda_available": true,
+  "cuda_device_count": 1,
+  "provider_key_env_absent": true,
+  "python_executable": "/workspace/fwi-task13/.task13-venv/bin/python",
+  "python_prefix": "/workspace/fwi-task13/.task13-venv",
+  "python_base_prefix": "/usr",
+  "torch_module_path": "/usr/local/lib/python3.12/dist-packages/torch/__init__.py",
+  "cuda_current_device": 0,
+  "actual_tensor_device": "cuda:0",
+  "gpu_name": "NVIDIA A40",
+  "gpu_total_memory_bytes": 47697690624,
+  "gpu_compute_capability": [
+    8,
+    6
+  ],
+  "driver": "580.178.04"
+}

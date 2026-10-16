@@ -1,0 +1,80 @@
+name: SI PyTorch FWI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_cuda:
+        description: Run trusted revision on a configured CUDA self-hosted runner
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  cpu:
+    runs-on: ubuntu-latest
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install locked CPU dependencies
+        run: |
+          python -m pip install torch==2.12.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -r requirements/fwi2d-py312.lock
+      - name: Build and install wheel
+        run: |
+          python -m pip wheel --no-deps --no-build-isolation . --wheel-dir /tmp/fwi-wheels
+          python -m pip install --no-deps --force-reinstall /tmp/fwi-wheels/*.whl
+      - name: Check installed public subpackages outside checkout
+        working-directory: /tmp
+        run: |
+          python -c "from simplefwi.fwi2d import AcousticFWI, Curvature, AcceptedStateRecorder; from simplefwi.fwi2d.solvers import DirectSolver; import simplefwi.fwi2d.uncertainty"
+      - name: Run SI numerical tests and executable README
+        run: python -m pytest tests/fwi2d -q
+      - name: Install tutorial execution tools
+        run: |
+          python -m pip install -c requirements/fwi2d-py312.lock \
+            nbformat==5.11.1 nbclient==0.11.0 nbconvert==7.17.2 ipykernel==7.4.0
+      - name: Execute tutorial notebooks on CPU
+        run: |
+          python -m jupyter nbconvert --execute --to notebook \
+            --output-dir /tmp/fwi-tutorial-runs --ExecutePreprocessor.timeout=300 \
+            notebooks/01_helmholtz_marmousi_cpu_gpu.ipynb \
+            notebooks/02_fwi_marmousi_optimizers.ipynb \
+            notebooks/03_camembert_hessian_uncertainty.ipynb
+
+  # Never runs on pull_request. Provision the cuda label and a matching official
+  # Torch 2.12.0 CUDA wheel on this trusted runner before manually dispatching.
+  cuda:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_cuda
+    runs-on: [self-hosted, linux, x64, cuda]
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require the pinned Torch release and actual CUDA
+        run: |
+          python3.12 -c "import torch; assert torch.__version__.split('+')[0] == '2.12.0'; assert torch.cuda.is_available(), 'CUDA job requires an actual GPU'"
+      - name: Install dependencies while preserving selected CUDA wheel
+        run: |
+          python3.12 -m pip install -r requirements/fwi2d-py312.lock
+          python3.12 -m pip wheel --no-deps --no-build-isolation . --wheel-dir /tmp/fwi-cuda-wheels
+          python3.12 -m pip install --no-deps --force-reinstall /tmp/fwi-cuda-wheels/*.whl
+      - name: Run explicit device contracts and recording with CUDA assertions
+        run: python3.12 -m pytest tests/fwi2d -m cuda -q -rs
+      - name: Execute Helmholtz tutorial with actual CUDA
+        run: |
+          python3.12 -m pip install -c requirements/fwi2d-py312.lock \
+            nbformat==5.11.1 nbclient==0.11.0 nbconvert==7.17.2 ipykernel==7.4.0
+          python3.12 -m jupyter nbconvert --execute --to notebook \
+            --output-dir /tmp/fwi-cuda-tutorial --ExecutePreprocessor.timeout=300 \
+            notebooks/01_helmholtz_marmousi_cpu_gpu.ipynb

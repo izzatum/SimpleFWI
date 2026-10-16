@@ -1,189 +1,217 @@
-# SimpleFWI
+# SimpleFWI — 2D Frequency-Domain Full-Waveform Inversion in PyTorch
 
-<p align="center">
-  <img src="asset/SimpleFWI_logo.png" alt="SimpleFWI Logo" width="400"/>
-</p>
+[Quickstart](#quickstart) · [Multiscale FWI](guides/multiscale.md) · [Tutorials](notebooks/README.md) · [Validation](guides/validation.md) · [MIT License](LICENSE)
 
-**Performance-grade frequency-domain Full Waveform Inversion (FWI)**
+**SimpleFWI is a Python research library for two-dimensional, constant-density
+acoustic frequency-domain full-waveform inversion (FWI).** Its
+`simplefwi.fwi2d` API uses PyTorch for complex Helmholtz modeling, implicit adjoint
+gradients, bounded velocity optimization, and exact/Gauss–Newton Hessian actions.
+Start with the CPU sparse-direct reference solver and the small examples below.
 
-SimpleFWI is a high-performance Python package for frequency-domain Full Waveform Inversion of seismic data. Built on PyLops for matrix-free operators, it supports multiple backends (NumPy, CuPy, JAX) for CPU and GPU acceleration.
+## Capabilities
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+- **Acoustic wave modeling:** conservative second-order Helmholtz operator,
+  perfectly matched layers (PML), and an optional pressure-release free surface.
+- **Multi-resolution and multi-frequency FWI:** coarse-to-fine grids and
+  low-to-high frequency bands, with physical squared-slowness transfer, fixed
+  acquisition coordinates, and fresh optimizer state at every stage.
+- **Native PyTorch optimizers:** 15 tested CPU recipes, including Adam, RMSprop,
+  L-BFGS, Muon, and SparseAdam, with explicit active masks and bounded velocities.
+- **Curvature and local uncertainty:** matrix-free exact Hessian and
+  Gauss–Newton actions in physical or dense parameter coordinates, plus
+  proper-prior local covariance tools.
+- **Reproducible experiments:** source-batched gradients, accepted-state HDF5
+  recording, restart checkpoints, dispersion screening, and Marmousi/Camembert
+  examples with recorded configuration and provenance.
 
-## 🎯 Primary Objective
+Models use SI units: metres, metres/second, and Hz. Model arrays are **[z, x]**
+with an explicit first-node origin; data are **[frequency, source, receiver]**.
+Defaults are float64 parameters and complex128 fields with `exp(-i omega t)`.
 
-**Ultra-fast computation with C-level performance** (50-100× speedup) + **optimal memory efficiency** for large-scale problems (N > 1e7 parameters).
-
-## ✨ Features
-
-- **Frequency-domain FWI**: Solves Helmholtz equation for acoustic wave propagation
-- **Matrix-free operators**: Memory-efficient via PyLops `LinearOperator`
-- **Backend-agnostic**: Automatic support for NumPy (CPU), CuPy (CUDA), JAX (Metal/CUDA)
-- **Adjoint-state gradients**: Efficient gradient computation using imaging condition
-- **Iterative optimization**: Barzilai-Borwein, Conjugate Gradient
-- **Apple Silicon support**: Native Metal GPU acceleration via JAX
-- **SOLID architecture**: Clean abstractions for extensibility
-
-## 🚀 Quick Start
-
-### Installation
-
-**For Apple Silicon (M1/M2/M3)**:
-```bash
-git clone https://github.com/izzatum/SimpleFWI.git
-cd SimpleFWI
-conda create -n simplefwi python=3.10
-conda activate simplefwi
-pip install -e ".[complete-metal]"
+```mermaid
+flowchart LR
+    G[Grid + acquisition + PML] --> A[Acoustic Helmholtz solver]
+    V[Bounded velocity] --> A
+    A --> D[Multi-frequency data misfit]
+    D --> B[Implicit adjoint gradient]
+    B --> O[Native PyTorch optimizer]
+    O --> V
+    D --> H[Exact and Gauss-Newton Hessian actions]
 ```
 
-**For NVIDIA GPU (CUDA)**:
+## Installation
+
+The validated environment uses **Python 3.12 and PyTorch 2.12.0**. From a checkout:
+
 ```bash
-pip install -e ".[complete-cuda]"
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install torch==2.12.0 --index-url https://download.pytorch.org/whl/cpu
+python -m pip install -r requirements/fwi2d-py312.lock
+python -m pip install --no-deps -e '.[fwi2d]'
 ```
 
-**CPU only**:
-```bash
-pip install -e ".[complete]"
-```
+For NVIDIA CUDA, use a separate environment and replace the CPU wheel command
+with the **PyTorch 2.12.0 CUDA wheel** appropriate for your driver from the
+[official PyTorch installer](https://pytorch.org/get-started/locally/). Then run
+the same dependency and editable-install commands. The legacy `gpu-cuda` extra
+is not the installation path for this PyTorch solver. See the
+[installation guide](guides/quickstart.md) and [optimizer constraints](guides/optimizers.md).
 
-### Basic Usage
+## Quickstart
+
+This complete CPU example simulates a circular velocity inclusion and accepts
+one Adam step. Run it in a fresh working directory; it writes `quickstart.pt`.
+Same-grid synthetic observations make this an integration check, not evidence
+of recovered geology after one step.
 
 ```python
-import numpy as np
-from simplefwi import ForwardSolver, DataMisfit, BBiter
+import json
+import math
+import torch
+from simplefwi.fwi2d import (
+    AcousticFWI, Acquisition, BoundaryConfig, Grid2D,
+    InversionRunner, SolverConfig, VelocityParameters,
+)
 
-# Define model
-model = {
-    'h': [10.0, 10.0],          # Grid spacing [dz, dx] in meters
-    'n': [100, 100],            # Grid dimensions [nz, nx]
-    'f': [2.0, 3.0, 4.0],       # Frequencies in Hz
-    'xs': [500],                # Source x-coordinates
-    'zs': [10],                 # Source z-coordinates
-    'xr': np.arange(0, 1000, 20),  # Receiver x-coordinates
-    'zr': 10*np.ones(50),       # Receiver z-coordinates
-    'q': np.eye(1),             # Source wavelet matrix
-}
-
-# Create slowness-squared model (m = 1/v²)
-m_true = (1/2.0)**2 * np.ones((10000, 1))  # True model
-m0 = (1/2.5)**2 * np.ones((10000, 1))      # Initial guess
-
-# Generate synthetic data
-Fm = ForwardSolver(model)
-Dobs, J = Fm.solve(m_true)
-
-# Run inversion
-misfit = DataMisfit(Dobs, model)
-history, m_inv, g = BBiter(misfit, m0, tol=1e-3, maxit=10)
-
-# Visualize result
-v_inv = 1.0 / np.sqrt(m_inv.reshape(100, 100))
+grid = Grid2D((17, 21), (25., 25.), origin_m=(0., 0.))
+boundary = BoundaryConfig(top='pml', pml_cells=5)
+acquisition = Acquisition(
+    sources_m=((50., 100.), (50., 400.)),
+    receivers_m=((75., 100.), (75., 250.), (75., 400.)),
+)
+z = torch.arange(grid.shape[0], dtype=torch.float64) * grid.spacing_m[0]
+x = torch.arange(grid.shape[1], dtype=torch.float64) * grid.spacing_m[1]
+inside = (z[:, None] - 200.)**2 + (x[None, :] - 250.)**2 <= 75.**2
+initial = torch.full(grid.shape, 1500., dtype=torch.float64)
+truth = torch.where(inside, 1650., initial)
+fwi = AcousticFWI(grid, acquisition, boundary, SolverConfig())
+observed = fwi.simulate(truth, (2.,), source_batch_size=1)
+objective = fwi.objective(observed, (2.,))
+model = VelocityParameters(initial, (1400., 1800.))
+before = model.velocity().detach().clone()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+runner = InversionRunner(objective, model, optimizer, source_batch_size=1)
+step = runner.step()
+torch.save({'velocity': model.velocity().detach(), 'data': observed}, 'quickstart.pt')
+print(json.dumps({
+    'accepted_steps': runner.accepted_steps, 'loss': step.loss,
+    'data_shape': list(observed.shape),
+    'finite_data': bool(torch.isfinite(observed).all()),
+    'finite_loss': math.isfinite(step.loss),
+    'closure_evaluations': step.closure_evaluations,
+    'model_changed': not torch.equal(before, model.velocity().detach()),
+}))
 ```
 
-## 📦 Package Structure
+![2D acoustic FWI grid with sources, receivers, velocity inclusion, PML and optional free surface](asset/fwi-workflow-domain.svg)
 
-```
-SimpleFWI/
-├── simplefwi/              # Main package
-│   ├── __init__.py         # Package exports
-│   ├── core.py             # Forward modeling & Jacobian
-│   ├── misfit.py           # Objective functions
-│   └── optimization.py     # Optimizers (BB, CG)
-├── tests/                  # Test suite
-│   ├── unit/               # Unit tests
-│   ├── integration/        # Integration tests
-│   └── validation/         # Mathematical correctness tests
-├── data/                   # Example datasets
-├── Example_*.ipynb         # Tutorial notebooks
-└── pyproject.toml          # Package configuration
-```
+The illustration matches the example geometry. Changing only
+`top='free_surface'` sets pressure to zero at the physical top and retains side
+and bottom PML. The five-cell layer is illustrative; validate PML thickness,
+grid spacing, and frequency together before an accuracy study.
 
-## 🧪 Running Tests
+## Run multi-resolution and multi-frequency inversion
+
+From the checkout, the Marmousi example runs coarse 2 Hz, fine 2 Hz, and fine
+joint 2/3 Hz stages:
 
 ```bash
-# Run all tests
-pytest tests/ -v
-
-# Run with coverage
-pytest --cov=simplefwi --cov-report=html
-
-# Run only fast tests (skip slow benchmarks)
-pytest tests/ -m "not slow"
-
-# Run GPU tests (if available)
-pytest tests/ -m gpu
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python examples/fwi2d/multiscale_marmousi.py \
+  --device cpu --quick --output /tmp/multiscale-cpu.json
 ```
 
-## 📚 Examples
+On an installed CUDA environment with an actual NVIDIA GPU:
 
-1. **Example_modelling.ipynb**: Forward modeling basics
-2. **Example_1.ipynb**: Circular reflector (Green's function reciprocity)
-3. **Example_2.ipynb**: Basic inversion with BB and CG
-4. **Example_3.ipynb**: Marmousi model (realistic benchmark)
+```bash
+python -c "import torch; assert torch.cuda.is_available(), 'CUDA device required'"
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m pytest tests/fwi2d -m cuda -q -rs
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python examples/fwi2d/multiscale_marmousi.py \
+  --device cuda --quick --output /tmp/multiscale-cuda.json
+```
 
-## 🛠️ Development Status
+CUDA uses the experimental matrix-free FGMRES path. Device, precision and
+residual tolerances are explicit; unavailable CUDA does not silently fall back
+to CPU. **All 10 CUDA tests passed on an NVIDIA A40** with PyTorch 2.12.0 and
+CUDA 13. See the [hardware validation record](benchmarks/fwi2d/results/runpod-multiscale.json)
+for executed cases and limits. No GPU speedup is established.
 
-**Current**: v0.1.0 - Research-quality implementation
+The [multiscale guide](guides/multiscale.md) explains stage schedules, immutable
+observations, PML widths, physical priors, masks, optimizer/scheduler resets and
+stage-local recording. Losses from different frequency bands are different
+objectives: assess reduction within each stage.
 
-**Roadmap** (see `.github/copilot-instructions.md`):
-- **Phase 1**: GPU acceleration (10-50× speedup) ⏳
-- **Phase 2**: JIT compilation (2-5× speedup) ⏳
-- **Phase 3**: Iterative solvers for N > 1e6 ⏳
-- **Phase 4**: Parallel processing (2-4× speedup) ⏳
-- **Phase 5**: Matrix-free implementations ⏳
-- **Phase 6**: SOLID refactoring ⏳
-- **Phase 7**: Hessian operators (Gauss-Newton, Full) ⏳
-- **Phase 8**: Advanced optimizers (ADAM, L-BFGS, Newton-CG) ⏳
-- **Phase 9**: Enhanced absorbing boundaries (sponge, Rayleigh) ⏳
-- **Phase 10**: Complete documentation & CI/CD ⏳
+## Tutorials and documentation
 
-## 🤝 Contributing
+| Start here | Topics |
+| --- | --- |
+| [Helmholtz modeling notebook](notebooks/01_helmholtz_marmousi_cpu_gpu.ipynb) | Marmousi, PML, wavefields, residuals, and explicit CPU/CUDA comparisons |
+| [FWI optimizer notebook](notebooks/02_fwi_marmousi_optimizers.ipynb) | Adam, RMSprop, L-BFGS, loss histories and measured computational work |
+| [Hessian and uncertainty notebook](notebooks/03_camembert_hessian_uncertainty.ipynb) | Exact/Gauss–Newton curvature, proper priors and local covariance |
+| [Accuracy and validation](guides/accuracy.md) | Dispersion screening, physical calibration and numerical error |
+| [Recording and restart](guides/outputs.md) | Accepted models, bounded HDF5 output and native-state checkpoints |
+| [Architecture](guides/architecture.md) · [Migration](guides/migration.md) | SI conventions, solver design and legacy API compatibility |
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
-- Development setup
-- SOLID principles & performance guidelines
-- Testing requirements
-- Code style & documentation standards
+The [notebook guide](notebooks/README.md) covers installation and execution.
+All three default notebooks have executed on CPU: 30 code cells and 16 saved
+figures. The Helmholtz notebook also passed a separate A40 CUDA execution;
+its saved illustrations retain the reviewed CPU run. See
+[implementation status](guides/implementation-status.md) for delivered features
+and outstanding work.
 
-## 📖 Documentation
+## Validation and limitations
 
-- **API Reference**: NumPy-style docstrings in source code
-- **Examples**: Jupyter notebooks in repository root
+The [recorded CPU run](benchmarks/fwi2d/results/multiscale-cpu.json) at revision
+`abbfe1f` reports **463 passed, zero failures/errors/skips, and 10 CUDA tests
+deselected**. Reproduce the CPU selection with:
 
-## 🔧 Dependencies
+```bash
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m pytest tests/fwi2d -m 'not cuda' -q
+```
 
-**Core**:
-- NumPy ≥ 1.24.0
-- SciPy ≥ 1.10.0
-- PyLops ≥ 2.3.0
-- Matplotlib ≥ 3.7.0
+CPU checks cover solver residuals, adjoints and second derivatives, physics
+fixtures, all 15 optimizer recipes, multiscale transfer and lifecycle, recording,
+and restart. A separate A40 run executed all **10 CUDA tests with zero failures,
+errors or skips**, including multiscale PML/free-surface parity and bounded
+recording. The CPU artifact's deselections are separate from this hardware result.
+Matched three-stage Marmousi crop runs reduced data misfit within every stage;
+the six CPU/GPU initial/final losses agreed within **6.22e-10 relative error**.
 
-**GPU Acceleration** (optional):
-- CuPy ≥ 12.0.0 (NVIDIA CUDA)
-- JAX[metal] ≥ 0.4.20 (Apple Silicon)
+The small Marmousi continuation examples use synthetic fine-grid observations
+and short, uncalibrated PML. Model RMSE did not improve in this short run, despite
+lower data misfit. These examples establish workflow integration; full-model
+reconstruction, independent continuum accuracy and high-frequency scaling remain
+unverified.
+Historical CPU FGMRES timings were worse than sparse-direct solves, and some
+harder cases failed convergence. A small linear residual or passed dispersion
+screen alone does not prove physical accuracy. The
+[validation guide](guides/validation.md) records these limits and pre-existing
+legacy full-repository pytest collection failures; the CPU result above applies
+to `tests/fwi2d`, not the entire legacy repository.
 
-**Performance** (optional):
-- Numba ≥ 0.58.0
-- Cython ≥ 3.0.0
+## FAQ
 
-## 📄 License
+**What wave physics does SimpleFWI support?** 2D constant-density acoustic waves
+in the frequency domain, with PML and an optional pressure-release free surface.
+The new API does not implement 3D, elastic, or variable-density inversion.
 
-MIT License - see [LICENSE](LICENSE) file for details.
+**How do multi-resolution and multi-frequency FWI differ?** Multi-resolution
+changes the grid; multi-frequency continuation changes the frequencies included
+in the objective. SimpleFWI schedules either or both and transfers physical
+`m = 1 / velocity**2` between refined grids.
 
-## 🙏 Acknowledgments
+**Can SimpleFWI run full-waveform inversion on a GPU?** Yes. The CUDA FGMRES path
+has passed 10 numerical tests on an NVIDIA A40, including small inversion and
+multiscale comparisons. Full-model high-frequency scaling remains unestablished;
+CPU sparse-direct solves remain the reference default.
 
-- Built on [PyLops](https://pylops.readthedocs.io/) for matrix-free operators
-- Backend abstraction pattern follows PyLops conventions
-- Inspired by frequency-domain FWI research community
+**Does SimpleFWI compute a Hessian?** It provides exact and Gauss–Newton
+Hessian-vector products without assembling a dense Hessian. Local uncertainty
+also requires declared noise scaling, parameter coordinates and a proper prior;
+see the [curvature and uncertainty guide](guides/uncertainty.md).
 
-## 📧 Contact
-
-- **Author**: Muhammad Izzatullah
-- **GitHub**: [@izzatum](https://github.com/izzatum)
-- **Issues**: [GitHub Issues](https://github.com/izzatum/SimpleFWI/issues)
-
----
-
-**Note**: SimpleFWI is under active development. The API may change as we implement the performance-focused roadmap.
+**Is SimpleFWI open source, and how should I cite it?** The code is
+[MIT licensed](LICENSE). Attribute the
+[repository and contributors](https://github.com/izzatum/SimpleFWI), record the
+revision and configuration used, and retain the license notice. No associated
+publication is claimed here.
