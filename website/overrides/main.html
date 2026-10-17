@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block site_meta %}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="{{ 'assets/favicon.svg' | url }}">
+  {% if page %}
+  <meta name="description" content="{{ page.meta.description | default(config.site_description, true) | e }}">
+  <link rel="canonical" href="{{ page.canonical_url | e }}">
+  {% endif %}
+  {% for name, token in config.extra.verification.items() %}
+  <meta name="{{ name | e }}" content="{{ token | e }}">
+  {% endfor %}
+{% endblock %}
+
+{% block htmltitle %}
+  <title>{% if page %}{{ page.meta.title | default(page.title, true) | e }} | {% endif %}SimpleFWI</title>
+{% endblock %}
+
+{% block extrahead %}
+  {% if page %}
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="SimpleFWI">
+  <meta property="og:title" content="{{ page.meta.title | default(page.title, true) | e }} | SimpleFWI">
+  <meta property="og:description" content="{{ page.meta.description | default(config.site_description, true) | e }}">
+  <meta property="og:url" content="{{ page.canonical_url | e }}">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{{ page.meta.title | default(page.title, true) | e }} | SimpleFWI">
+  <meta name="twitter:description" content="{{ page.meta.description | default(config.site_description, true) | e }}">
+  <script type="application/ld+json">{{ config.extra.source_schema | tojson }}</script>
+  {% endif %}
+{% endblock %}
+
+{% block next_prev %}{% endblock %}
+{% block content %}
+  <main id="content" class="col-12 docs-content">
+    {% if page %}{{ page.content }}{% else %}<h1>Page not found</h1><p>Return to the <a href="{{ config.site_url }}">SimpleFWI documentation</a>.</p>{% endif %}
+  </main>
+{% endblock %}
+{% block scripts %}{% endblock %}
+{% block footer %}
+  <hr>
+  <p><a href="https://github.com/izzatum/SimpleFWI">Source code and issues</a> ·
+  <a href="https://github.com/izzatum/SimpleFWI/blob/main/LICENSE">MIT license</a> ·
+  <a href="{{ 'CITATION.cff' | url }}">Citation metadata</a> ·
+  <a href="{{ 'sitemap.xml' | url }}">Sitemap</a></p>
+  <p>Research software for 2D constant-density acoustic FWI. Read the validation limits before interpreting results.</p>
+  <p><a href="https://github.com/izzatum/SimpleFWI/blob/main/guides/search-visibility.md">Site ownership and indexing guidance</a></p>
+{% endblock %}

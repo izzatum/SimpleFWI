@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "simplefwi"
 version = "0.1.0"
-description = "Performance-grade frequency-domain Full Waveform Inversion (FWI) package"
+description = "2D acoustic frequency-domain full-waveform inversion in PyTorch, with Helmholtz PML solvers and Hessian-vector products"
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
@@ -14,12 +14,16 @@ authors = [
 ]
 keywords = [
     "full-waveform-inversion",
+    "pytorch",
+    "2d-acoustic-modeling",
     "seismic",
     "geophysics",
     "inverse-problems",
-    "optimization",
     "helmholtz-equation",
-    "frequency-domain"
+    "frequency-domain",
+    "perfectly-matched-layer",
+    "multi-frequency-inversion",
+    "hessian-vector-products"
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -190,6 +194,9 @@ Homepage = "https://github.com/izzatum/SimpleFWI"
 Documentation = "https://github.com/izzatum/SimpleFWI/blob/main/README.md"
 Repository = "https://github.com/izzatum/SimpleFWI"
 Issues = "https://github.com/izzatum/SimpleFWI/issues"
+Tutorials = "https://github.com/izzatum/SimpleFWI/tree/main/notebooks"
+Validation = "https://github.com/izzatum/SimpleFWI/blob/main/guides/validation.md"
+Citation = "https://github.com/izzatum/SimpleFWI/blob/main/CITATION.cff"
 
 [tool.setuptools.packages.find]
 include = ["simplefwi", "simplefwi.*"]

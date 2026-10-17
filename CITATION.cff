@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+message: >-
+  If you use SimpleFWI, cite this software and record the exact commit,
+  configuration, and data provenance used in your experiment.
+type: software
+title: "SimpleFWI: 2D Full-Waveform Inversion in PyTorch"
+authors:
+  - family-names: Izzatullah
+    given-names: Muhammad
+repository-code: https://github.com/izzatum/SimpleFWI
+url: https://github.com/izzatum/SimpleFWI
+version: 0.1.0
+license: MIT
+abstract: >-
+  SimpleFWI is a Python research library for two-dimensional,
+  constant-density acoustic full-waveform inversion in the frequency domain.
+  Its PyTorch API includes a Helmholtz solver with perfectly matched layers
+  and an optional free surface, multi-resolution and multi-frequency
+  continuation, native PyTorch optimizers, implicit adjoint gradients, and
+  matrix-free exact and Gauss-Newton Hessian-vector products for local
+  uncertainty studies. CPU sparse-direct solves provide the reference path;
+  experimental CUDA solves have been validated on small numerical examples.
+keywords:
+  - full-waveform inversion
+  - PyTorch
+  - 2D acoustic modeling
+  - frequency-domain inversion
+  - Helmholtz equation
+  - perfectly matched layer
+  - seismic inversion
+  - geophysics
+  - multi-frequency continuation
+  - Hessian-vector products

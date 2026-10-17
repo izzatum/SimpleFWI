@@ -1,0 +1,30 @@
+# SimpleFWI
+
+> Open-source Python research software for 2D constant-density acoustic full-waveform inversion in PyTorch, using frequency-domain Helmholtz modeling with PML and an optional free surface. Code license: MIT.
+
+## Start here
+
+- [Repository and installation](https://github.com/izzatum/SimpleFWI): Project overview and executable quickstart; the validated environment uses Python 3.12 and PyTorch 2.12.0.
+- [Software citation](https://github.com/izzatum/SimpleFWI/blob/main/CITATION.cff): Author, declared software version, license and citation metadata. Record the exact commit used; no associated paper or DOI is claimed.
+- [Architecture and SI conventions](https://github.com/izzatum/SimpleFWI/blob/main/guides/architecture.md): Physical arrays are [z, x]; data are [frequency, source, receiver].
+
+## Workflows
+
+- [Helmholtz solver and accuracy](https://github.com/izzatum/SimpleFWI/blob/main/guides/accuracy.md): CPU sparse-direct reference, experimental CUDA FGMRES, dispersion screening and PML calibration requirements.
+- [Multi-resolution and multi-frequency FWI](https://github.com/izzatum/SimpleFWI/blob/main/guides/multiscale.md): Explicit coarse-to-fine and frequency stages, physical squared-slowness transfer, fixed acquisition coordinates and fresh optimizer state.
+- [Native PyTorch optimizers](https://github.com/izzatum/SimpleFWI/blob/main/guides/optimizers.md): Fifteen CPU recipes with representation constraints; selected SGD/Adam paths have CUDA evidence.
+- [Exact and Gauss-Newton Hessian uncertainty](https://github.com/izzatum/SimpleFWI/blob/main/guides/uncertainty.md): Matrix-free Hessian actions and local covariance conditional on parameter coordinates, noise scaling and a proper prior.
+- [Recording and restart](https://github.com/izzatum/SimpleFWI/blob/main/guides/outputs.md): Accepted-state HDF5 recording, bounded buffers, native optimizer checkpoints and storage guidance.
+
+## Tutorials
+
+- [Marmousi Helmholtz on CPU and GPU](https://github.com/izzatum/SimpleFWI/blob/main/notebooks/01_helmholtz_marmousi_cpu_gpu.ipynb): Full-domain CPU forward modeling and bounded CPU/CUDA comparisons.
+- [Marmousi FWI with Adam, RMSprop and L-BFGS](https://github.com/izzatum/SimpleFWI/blob/main/notebooks/02_fwi_marmousi_optimizers.ipynb): Measured optimizer work and data misfit; CPU validation.
+- [Camembert Hessian and uncertainty](https://github.com/izzatum/SimpleFWI/blob/main/notebooks/03_camembert_hessian_uncertainty.ipynb): Exact/Gauss-Newton curvature and proper-prior local uncertainty; CPU validation.
+
+## Evidence and limits
+
+- [Validation report](https://github.com/izzatum/SimpleFWI/blob/main/guides/validation.md): Numerical source abbfe1fa7102580a725990e8de3a241c4874b354 passed 463 CPU tests and a separate 10-test NVIDIA A40 CUDA run.
+- [Recorded GPU evidence](https://github.com/izzatum/SimpleFWI/blob/6031501cf520fb9256103b0647335624dad3745f/benchmarks/fwi2d/results/runpod-multiscale.json): Source/runtime hashes, residuals, derivative errors, matched stage losses and resource cleanup.
+
+The short Marmousi continuation reduced data misfit but worsened model RMSE, and CUDA was slower on that crop. Full-model high-frequency reconstruction, general GPU speedup and independent continuum accuracy are not established. Dispersion screening is not automatic physical validation. The API does not implement 3D, elastic or variable-density inversion. Public tutorial figures are from CPU executions; a separate headless CUDA notebook run has numerical outputs but no embedded plots.

@@ -31,8 +31,10 @@ env.bak/
 venv.bak/
 .conda/
 
-# Documentation (all docs in single directory, git-ignored)
+# Legacy documentation output; keep the static site's source pages tracked.
 docs/
+!website/docs/
+!website/docs/**
 .benchmarks/
 
 # Github
@@ -126,6 +128,8 @@ docs/_build/
 # Environments
 .env
 .venv
+.venv-docs/
+site/
 
 # Data files (large)
 *.mat
