@@ -1,0 +1,49 @@
+site_name: SimpleFWI
+site_url: https://izzatum.github.io/SimpleFWI/
+site_description: >-
+  2D full-waveform inversion in PyTorch: frequency-domain acoustic Helmholtz
+  modeling with PML, multiscale optimization, and Hessian-based local uncertainty.
+repo_url: https://github.com/izzatum/SimpleFWI
+repo_name: GitHub
+edit_uri: edit/main/website/docs/
+docs_dir: website/docs
+site_dir: site
+use_directory_urls: true
+strict: true
+
+theme:
+  name: mkdocs
+  custom_dir: website/overrides
+  locale: en
+  color_mode: light
+  user_color_mode_toggle: false
+  highlightjs: false
+  nav_style: light
+
+nav:
+  - Overview: index.md
+  - Helmholtz & PML: helmholtz-pml.md
+  - Multiscale FWI: multiscale-fwi.md
+  - Hessian & uncertainty: hessian-uncertainty.md
+  - Validation & FAQ: validation.md
+
+plugins: []
+hooks:
+  - website/hooks.py
+markdown_extensions:
+  - admonition
+  - tables
+  - fenced_code
+  - toc:
+      permalink: true
+extra_css:
+  - assets/site.css
+validation:
+  links:
+    not_found: warn
+    anchors: warn
+    unrecognized_links: warn
+
+extra:
+  source_repository: https://github.com/izzatum/SimpleFWI
+  numerical_revision: abbfe1fa7102580a725990e8de3a241c4874b354

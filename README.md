@@ -1,12 +1,15 @@
-# SimpleFWI — 2D Frequency-Domain Full-Waveform Inversion in PyTorch
+# SimpleFWI — 2D Full-Waveform Inversion in PyTorch
 
-[Quickstart](#quickstart) · [Multiscale FWI](guides/multiscale.md) · [Tutorials](notebooks/README.md) · [Validation](guides/validation.md) · [MIT License](LICENSE)
+[Documentation](guides/architecture.md) · [Quickstart](#quickstart) · [Tutorials](notebooks/README.md) · [Validation](guides/validation.md) · [Citation](CITATION.cff) · [MIT License](LICENSE)
 
-**SimpleFWI is a Python research library for two-dimensional, constant-density
-acoustic frequency-domain full-waveform inversion (FWI).** Its
-`simplefwi.fwi2d` API uses PyTorch for complex Helmholtz modeling, implicit adjoint
-gradients, bounded velocity optimization, and exact/Gauss–Newton Hessian actions.
-Start with the CPU sparse-direct reference solver and the small examples below.
+**SimpleFWI is an open-source Python library for 2D full-waveform inversion
+(FWI) in PyTorch.** It estimates acoustic velocity by matching modeled and
+observed seismic data in the frequency domain. The `simplefwi.fwi2d` API provides
+a constant-density Helmholtz solver with perfectly matched layers (PML),
+implicit adjoint gradients, multi-frequency inversion, and Hessian-vector
+products for local uncertainty studies. Start with the CPU sparse-direct
+reference solver and the examples below; the experimental CUDA solver has
+separate [hardware validation](benchmarks/fwi2d/results/runpod-multiscale.json).
 
 ## Capabilities
 
@@ -189,11 +192,18 @@ screen alone does not prove physical accuracy. The
 legacy full-repository pytest collection failures; the CPU result above applies
 to `tests/fwi2d`, not the entire legacy repository.
 
-## FAQ
+## Frequently asked questions
 
-**What wave physics does SimpleFWI support?** 2D constant-density acoustic waves
-in the frequency domain, with PML and an optional pressure-release free surface.
-The new API does not implement 3D, elastic, or variable-density inversion.
+**What is 2D full-waveform inversion?** FWI estimates subsurface properties by
+minimizing the difference between simulated and observed wave data. SimpleFWI
+estimates a two-dimensional acoustic velocity model using frequency-domain
+data. It does not implement 3D, elastic, or variable-density inversion.
+
+**How does the Helmholtz solver handle boundaries?** A padded perfectly matched
+layer (PML) uses complex coordinate stretching to absorb outgoing waves. An
+optional pressure-release free surface replaces the top PML; side and bottom
+PML remain. See the [solver architecture](guides/architecture.md) and
+[accuracy guide](guides/accuracy.md).
 
 **How do multi-resolution and multi-frequency FWI differ?** Multi-resolution
 changes the grid; multi-frequency continuation changes the frequencies included
@@ -210,8 +220,13 @@ Hessian-vector products without assembling a dense Hessian. Local uncertainty
 also requires declared noise scaling, parameter coordinates and a proper prior;
 see the [curvature and uncertainty guide](guides/uncertainty.md).
 
-**Is SimpleFWI open source, and how should I cite it?** The code is
-[MIT licensed](LICENSE). Attribute the
-[repository and contributors](https://github.com/izzatum/SimpleFWI), record the
-revision and configuration used, and retain the license notice. No associated
-publication is claimed here.
+## Citation and license
+
+Use the repository's **Cite this repository** menu or [CITATION.cff](CITATION.cff)
+for software attribution. Record the exact commit, configuration and data
+provenance so others can reproduce your result; no associated publication or
+DOI is claimed. The code is [MIT licensed](LICENSE). Retain the license notice
+when redistributing it; check model-data provenance separately.
+
+Maintainers: [Documentation publishing](website/README.md) ·
+[Search visibility and indexing](guides/search-visibility.md).

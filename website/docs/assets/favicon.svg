@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>SimpleFWI wave symbol</title>
+  <rect width="64" height="64" rx="12" fill="#075985"/>
+  <path d="M8 32 C14 8 20 8 26 32 S38 56 44 32 S54 8 58 32" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+</svg>
